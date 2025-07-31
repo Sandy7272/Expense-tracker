@@ -30,23 +30,31 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-secondary/10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/5 relative">
+      {/* Cyber Grid Background */}
+      <div className="fixed inset-0 opacity-5 pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,255,255,0.3) 1px, transparent 0)',
+          backgroundSize: '50px 50px'
+        }} />
+      </div>
+      
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card/95 backdrop-blur-md border-r border-border/50 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-64 glass-card border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border/50">
-          <h1 className="text-xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            💰 ExpenseTracker
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/10">
+          <h1 className="text-xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
+            ⚡ CyberFinance
           </h1>
           <Button
             variant="ghost"
@@ -66,15 +74,15 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+                  "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 cyber-button",
                   item.current
-                    ? "bg-primary/10 text-primary shadow-sm border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-primary/20 text-primary glow-primary border border-primary/30"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                 )}
               >
                 <Icon className={cn(
-                  "mr-3 h-5 w-5 transition-colors",
-                  item.current ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  "mr-3 h-5 w-5 transition-all duration-300",
+                  item.current ? "text-primary animate-pulse" : "text-muted-foreground group-hover:text-primary"
                 )} />
                 {item.name}
               </a>
@@ -83,12 +91,12 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         </nav>
 
         <div className="absolute bottom-6 left-4 right-4">
-          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 border border-primary/20">
-            <p className="text-xs text-muted-foreground font-medium">
-              ✨ Synced with Google Sheets
+          <div className="glass-card glow-primary p-4 border border-primary/30">
+            <p className="text-xs text-primary font-medium">
+              🚀 Live Google Sheets Sync
             </p>
             <p className="text-xs text-foreground/60 mt-1">
-              Real-time updates every 5 minutes
+              Real-time cyberpunk analytics
             </p>
           </div>
         </div>

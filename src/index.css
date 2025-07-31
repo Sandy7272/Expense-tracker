@@ -2,76 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pastel Design System for Personal Expense Tracker */
+/* Cyberpunk Dark Theme with Glassmorphism */
 
 @layer base {
   :root {
-    /* Soft Pastel Color Palette */
-    --background: 35 20% 97%;
-    --foreground: 220 15% 25%;
+    /* Dark Cyberpunk Color Palette */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 25%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 25%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Mint Green Primary */
-    --primary: 150 40% 75%;
-    --primary-foreground: 150 60% 15%;
+    /* Neon Cyan Primary */
+    --primary: 189 100% 56%;
+    --primary-foreground: 240 10% 3.9%;
     
-    /* Soft Blue Secondary */
-    --secondary: 210 50% 88%;
-    --secondary-foreground: 210 60% 25%;
+    /* Deep Purple Secondary */
+    --secondary: 270 95% 20%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Light Beige Muted */
-    --muted: 35 30% 92%;
-    --muted-foreground: 220 15% 45%;
+    /* Dark Muted */
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    /* Gentle Pink Accent */
-    --accent: 330 40% 85%;
-    --accent-foreground: 330 60% 25%;
+    /* Neon Pink Accent */
+    --accent: 320 90% 60%;
+    --accent-foreground: 240 10% 3.9%;
 
-    --destructive: 0 65% 75%;
-    --destructive-foreground: 0 85% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 35 25% 88%;
-    --input: 35 25% 95%;
-    --ring: 150 40% 75%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 189 100% 56%;
 
-    /* Success variant for positive balance */
-    --success: 120 40% 75%;
-    --success-foreground: 120 60% 15%;
+    /* Neon Green Success */
+    --success: 120 100% 50%;
+    --success-foreground: 240 10% 3.9%;
 
-    /* Warning variant */
-    --warning: 45 85% 75%;
-    --warning-foreground: 45 85% 15%;
+    /* Neon Orange Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 240 10% 3.9%;
 
-    /* Expense Red */
-    --expense: 0 50% 80%;
-    --expense-foreground: 0 70% 20%;
+    /* Neon Red Expense */
+    --expense: 0 84% 60%;
+    --expense-foreground: 0 0% 98%;
 
-    /* Income Green */
-    --income: 150 50% 70%;
-    --income-foreground: 150 70% 15%;
+    /* Neon Green Income */
+    --income: 120 100% 50%;
+    --income-foreground: 240 10% 3.9%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(150 40% 75%), hsl(150 60% 65%));
-    --gradient-success: linear-gradient(135deg, hsl(120 40% 75%), hsl(120 60% 65%));
-    --gradient-expense: linear-gradient(135deg, hsl(0 50% 80%), hsl(0 70% 70%));
-    --gradient-income: linear-gradient(135deg, hsl(150 50% 70%), hsl(150 70% 60%));
-    --gradient-soft: linear-gradient(180deg, hsl(35 20% 97%), hsl(35 30% 95%));
+    /* Investment Purple */
+    --investment: 270 95% 60%;
+    --investment-foreground: 0 0% 98%;
 
-    /* Shadows for neumorphism */
-    --shadow-soft: 0 4px 20px hsl(220 15% 25% / 0.08);
-    --shadow-card: 0 2px 12px hsl(220 15% 25% / 0.06);
-    --shadow-hover: 0 8px 30px hsl(220 15% 25% / 0.12);
+    /* Lending Blue */
+    --lending: 200 98% 55%;
+    --lending-foreground: 240 10% 3.9%;
 
-    /* Animations */
+    /* Cyberpunk Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(189 100% 56%), hsl(270 95% 60%));
+    --gradient-success: linear-gradient(135deg, hsl(120 100% 50%), hsl(160 100% 45%));
+    --gradient-expense: linear-gradient(135deg, hsl(0 84% 60%), hsl(320 90% 60%));
+    --gradient-income: linear-gradient(135deg, hsl(120 100% 50%), hsl(189 100% 56%));
+    --gradient-investment: linear-gradient(135deg, hsl(270 95% 60%), hsl(320 90% 60%));
+    --gradient-lending: linear-gradient(135deg, hsl(200 98% 55%), hsl(189 100% 56%));
+    --gradient-cyberpunk: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(270 95% 15%));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+
+    /* Glassmorphism Effects */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --glass-hover: rgba(255, 255, 255, 0.1);
+    
+    /* Neon Glows */
+    --glow-primary: 0 0 20px hsl(189 100% 56% / 0.5);
+    --glow-success: 0 0 20px hsl(120 100% 50% / 0.5);
+    --glow-expense: 0 0 20px hsl(0 84% 60% / 0.5);
+    --glow-accent: 0 0 20px hsl(320 90% 60% / 0.5);
+
+    /* Enhanced Shadows */
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.6);
+    --shadow-neon: 0 0 30px currentColor;
+
+    /* Smooth Cyberpunk Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-glow: all 0.2s ease-in-out;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -136,5 +161,79 @@
 
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(270 95% 8%));
+    min-height: 100vh;
   }
+}
+
+@layer components {
+  /* Glassmorphism Card Base */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .glass-card:hover {
+    background: var(--glass-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* Neon Glow Effects */
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  
+  .glow-success {
+    box-shadow: var(--glow-success);
+  }
+  
+  .glow-expense {
+    box-shadow: var(--glow-expense);
+  }
+  
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+
+  /* Animated Counter */
+  .counter-animate {
+    animation: counter-glow 2s ease-in-out infinite alternate;
+  }
+
+  /* Cyberpunk Button */
+  .cyber-button {
+    position: relative;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    transition: var(--transition-glow);
+  }
+  
+  .cyber-button:hover {
+    background: var(--glass-hover);
+    box-shadow: var(--glow-primary);
+    transform: translateY(-1px);
+  }
+  
+  .cyber-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: var(--gradient-primary);
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .cyber-button:hover::before {
+    opacity: 1;
+  }
+}
 }

@@ -1,112 +1,105 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { WelcomeCard } from "@/components/dashboard/WelcomeCard";
-import { BalanceCard } from "@/components/dashboard/BalanceCard";
-import { SummaryCards } from "@/components/dashboard/SummaryCards";
+import { FinancialSummaryCards } from "@/components/dashboard/FinancialSummaryCards";
+import { InvestmentBreakdown } from "@/components/dashboard/InvestmentBreakdown";
+import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
+import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
+import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
-import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { useGoogleSheets } from "@/hooks/useGoogleSheets";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
-  const { data, isLoading, refetch, addTransaction } = useGoogleSheets();
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState("January 2025");
+  const availableMonths = ["December 2024", "January 2025", "February 2025"];
+  
+  // Mock data for cyberpunk dashboard
+  const mockData = {
+    totalIncome: 125000,
+    totalSpend: 78000,
+    totalInvestment: 45000,
+    emi: 15000,
+    usneDile: 25000,
+    usneGhetle: 8000,
+    savingInBank: 32000,
+    categoryData: [
+      { category: "Food", amount: 25000, color: "hsl(189 100% 56%)" },
+      { category: "Transport", amount: 18000, color: "hsl(320 90% 60%)" },
+      { category: "Entertainment", amount: 12000, color: "hsl(120 100% 50%)" }
+    ],
+    monthlyData: [
+      { month: "Oct", income: 120000, expenses: 75000 },
+      { month: "Nov", income: 130000, expenses: 82000 },
+      { month: "Dec", income: 118000, expenses: 70000 },
+      { month: "Jan", income: 125000, expenses: 78000 }
+    ]
+  };
 
-  if (isLoading && !data) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          {/* Loading skeletons */}
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
-            ))}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const investmentData = {
+    mutualFunds: 180000,
+    stocks: 95000,
+    insurancePolicy: 65000,
+    bhishi: 35000,
+    totalInvestment: 375000
+  };
 
-  if (!data) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="text-6xl mb-4">📊</div>
-            <h2 className="text-2xl font-heading font-bold text-foreground mb-2">
-              No data available
-            </h2>
-            <p className="text-muted-foreground">
-              Unable to load data from Google Sheets
-            </p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const lendBorrowData = {
+    usneDile: 45000,
+    usnePrtAle: 12000,
+    usneGhetle: 23000,
+    usnePrtDile: 8000
+  };
 
-  const topCategory = data.categoryData.length > 0 
-    ? data.categoryData.reduce((max, current) => 
-        current.amount > max.amount ? current : max
-      ).category
-    : "None";
+  const personLendingData = [
+    { name: "Rahul", amount: 15000, totalRemaining: 12000 },
+    { name: "Priya", amount: 8000, totalRemaining: -3000 },
+    { name: "Amit", amount: 20000, totalRemaining: 20000 }
+  ];
 
   return (
-    <DashboardLayout onRefresh={refetch} isLoading={isLoading}>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Section */}
-        <WelcomeCard userName="Sandy" lastUpdated={data.lastUpdated} />
-
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Balance Card - spans 2 columns on large screens */}
-          <div className="lg:col-span-2">
-            <BalanceCard 
-              totalIncome={data.totalIncome}
-              totalExpenses={data.totalExpenses}
-            />
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto space-y-8 p-6">
+        {/* Header with Month Selector */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              Cyberpunk Finance Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">Real-time financial analytics in ₹</p>
           </div>
-          
-          {/* Category Pie Chart */}
-          <div className="lg:col-span-1">
-            <CategoryPieChart data={data.categoryData} />
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <SummaryCards
-          totalIncome={data.totalIncome}
-          totalExpenses={data.totalExpenses}
-          transactionCount={data.transactions.length}
-          topCategory={topCategory}
-        />
-
-        {/* Charts and Transactions */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Monthly Trends Chart */}
-          <MonthlyTrendsChart data={data.monthlyData} />
-          
-          {/* Recent Transactions */}
-          <RecentTransactions 
-            transactions={data.transactions.slice(0, 8)}
-            onAddNew={() => setShowAddModal(true)}
+          <MonthSelector 
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            availableMonths={availableMonths}
           />
         </div>
 
-        {/* Add Expense Modal */}
-        <AddExpenseModal
-          open={showAddModal}
-          onOpenChange={setShowAddModal}
-          onSubmit={addTransaction}
+        {/* Financial Summary Cards */}
+        <FinancialSummaryCards 
+          totalIncome={mockData.totalIncome}
+          totalSpend={mockData.totalSpend}
+          totalInvestment={investmentData.totalInvestment}
+          emi={mockData.emi}
+          usneDile={mockData.usneDile}
+          usneGhetle={mockData.usneGhetle}
+          savingInBank={mockData.savingInBank}
         />
+
+        {/* Investment & Lending Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <InvestmentBreakdown data={investmentData} />
+          <PersonLendingTable data={personLendingData} />
+        </div>
+
+        {/* Lend/Borrow Overview */}
+        <LendBorrowOverview data={lendBorrowData} />
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <CategoryPieChart data={mockData.categoryData} />
+          <MonthlyTrendsChart data={mockData.monthlyData} />
+        </div>
       </div>
     </DashboardLayout>
   );

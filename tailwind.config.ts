@@ -72,6 +72,14 @@ export default {
 					DEFAULT: 'hsl(var(--income))',
 					foreground: 'hsl(var(--income-foreground))'
 				},
+				investment: {
+					DEFAULT: 'hsl(var(--investment))',
+					foreground: 'hsl(var(--investment-foreground))'
+				},
+				lending: {
+					DEFAULT: 'hsl(var(--lending))',
+					foreground: 'hsl(var(--lending-foreground))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

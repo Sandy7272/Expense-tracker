@@ -44,3 +44,6 @@ export const parseINRAmount = (amountString: string): number => {
   const cleaned = amountString.replace(/[₹,\s]/g, '');
   return parseFloat(cleaned) || 0;
 };
+
+// Export alias for consistency
+export { formatINR as formatCurrency };

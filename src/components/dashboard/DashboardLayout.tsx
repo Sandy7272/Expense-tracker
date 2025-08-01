@@ -7,10 +7,12 @@ import {
   Settings,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Link, useLocation } from "react-router-dom";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -19,15 +21,17 @@ interface DashboardLayoutProps {
 }
 
 const navigation = [
-  { name: "Home", href: "/", icon: Home, current: true },
-  { name: "Transactions", href: "/transactions", icon: CreditCard, current: false },
-  { name: "Reports", href: "/reports", icon: BarChart3, current: false },
-  { name: "Budgets", href: "/budgets", icon: PiggyBank, current: false },
-  { name: "Settings", href: "/settings", icon: Settings, current: false },
+  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Transactions", href: "/transactions", icon: CreditCard },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Investments", href: "/investments", icon: PiggyBank },
+  { name: "Lending", href: "/lending", icon: Users },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/5 relative">
@@ -69,23 +73,25 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         <nav className="mt-8 px-4 space-y-2">
           {navigation.map((item) => {
             const Icon = item.icon;
+            const isActive = location.pathname === item.href;
             return (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 cyber-button",
-                  item.current
+                  isActive
                     ? "bg-primary/20 text-primary glow-primary border border-primary/30"
                     : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                 )}
+                onClick={() => setSidebarOpen(false)}
               >
                 <Icon className={cn(
                   "mr-3 h-5 w-5 transition-all duration-300",
-                  item.current ? "text-primary animate-pulse" : "text-muted-foreground group-hover:text-primary"
+                  isActive ? "text-primary animate-pulse" : "text-muted-foreground group-hover:text-primary"
                 )} />
                 {item.name}
-              </a>
+              </Link>
             );
           })}
         </nav>

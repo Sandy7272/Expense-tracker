@@ -213,8 +213,11 @@ export function useGoogleSheets() {
   useEffect(() => {
     fetchData();
     
-    // Set up auto-refresh every 5 minutes
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    // Simulate real-time updates - in production this would use Google Sheets API
+    const interval = setInterval(() => {
+      console.log("🔄 Auto-refreshing data from Google Sheets...");
+      fetchData();
+    }, 300000); // Check every 5 minutes for real-time sync
     
     return () => clearInterval(interval);
   }, []);

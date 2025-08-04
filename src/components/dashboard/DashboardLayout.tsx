@@ -8,11 +8,13 @@ import {
   Menu,
   X,
   RefreshCw,
-  Users
+  Users,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -32,6 +34,7 @@ const navigation = [
 export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/5 relative">
@@ -96,7 +99,28 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
           })}
         </nav>
 
-        <div className="absolute bottom-6 left-4 right-4">
+        <div className="absolute bottom-6 left-4 right-4 space-y-4">
+          <div className="flex items-center gap-3 p-3 glass-card border border-white/10">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <span className="text-xs font-bold text-white">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">
+                {user?.email}
+              </p>
+            </div>
+            <Button
+              onClick={signOut}
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+          
           <div className="glass-card glow-primary p-4 border border-primary/30">
             <p className="text-xs text-primary font-medium">
               🚀 Live Google Sheets Sync

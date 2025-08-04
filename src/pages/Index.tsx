@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { FinancialSummaryCards } from "@/components/dashboard/FinancialSummaryCards";
 import { InvestmentBreakdown } from "@/components/dashboard/InvestmentBreakdown";
@@ -7,35 +7,37 @@ import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
-import { useGoogleSheets } from "@/hooks/useGoogleSheets";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
+import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
+import { useTransactions } from "@/hooks/useTransactions";
+import { format } from "date-fns";
 
-const Index = () => {
+export default function Index() {
   const [selectedMonth, setSelectedMonth] = useState("January 2025");
-  const availableMonths = ["December 2024", "January 2025", "February 2025"];
-  
-  // Mock data for cyberpunk dashboard
-  const mockData = {
-    totalIncome: 125000,
-    totalSpend: 78000,
-    totalInvestment: 45000,
-    emi: 15000,
-    usneDile: 25000,
-    usneGhetle: 8000,
-    savingInBank: 32000,
-    categoryData: [
-      { category: "Food", amount: 25000, color: "hsl(189 100% 56%)" },
-      { category: "Transport", amount: 18000, color: "hsl(320 90% 60%)" },
-      { category: "Entertainment", amount: 12000, color: "hsl(120 100% 50%)" }
-    ],
-    monthlyData: [
-      { month: "Oct", income: 120000, expenses: 75000 },
-      { month: "Nov", income: 130000, expenses: 82000 },
-      { month: "Dec", income: 118000, expenses: 70000 },
-      { month: "Jan", income: 125000, expenses: 78000 }
-    ]
-  };
+  const [showAddModal, setShowAddModal] = useState(false);
+  const { transactions, isLoading } = useTransactions();
 
+  // Calculate financial data from real transactions
+  const financialData = useMemo(() => {
+    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    return {
+      totalIncome: income,
+      totalSpend: expenses,
+      totalInvestment: 45000,
+      emi: 15000,
+      usneDile: 25000,
+      usneGhetle: 8000,
+      savingInBank: income - expenses,
+      categoryData: [],
+      monthlyData: []
+    };
+  }, [transactions]);
+
+  const availableMonths = ["December 2024", "January 2025", "February 2025"];
+
+  // Mock data for other components
   const investmentData = {
     mutualFunds: 180000,
     stocks: 95000,
@@ -48,61 +50,44 @@ const Index = () => {
     usneDile: 45000,
     usnePrtAle: 12000,
     usneGhetle: 23000,
-    usnePrtDile: 8000
+    netAmount: 34000
   };
 
   const personLendingData = [
-    { name: "Rahul", amount: 15000, totalRemaining: 12000 },
-    { name: "Priya", amount: 8000, totalRemaining: -3000 },
-    { name: "Amit", amount: 20000, totalRemaining: 20000 }
+    { name: "Alex Johnson", amount: 1500, type: "lent", dueDate: "2024-03-15", status: "pending" },
+    { name: "Sarah Chen", amount: 800, type: "borrowed", dueDate: "2024-03-10", status: "overdue" },
   ];
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 p-6">
-        {/* Header with Month Selector */}
-        <div className="flex justify-between items-center">
+    <DashboardLayout onRefresh={() => {}} isLoading={isLoading}>
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Cyberpunk Finance Dashboard
+            <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
+              Financial Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1">Real-time financial analytics in ₹</p>
+            <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
           </div>
-          <MonthSelector 
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
-            availableMonths={availableMonths}
-          />
+          <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />
         </div>
 
-        {/* Financial Summary Cards */}
-        <FinancialSummaryCards 
-          totalIncome={mockData.totalIncome}
-          totalSpend={mockData.totalSpend}
-          totalInvestment={investmentData.totalInvestment}
-          emi={mockData.emi}
-          usneDile={mockData.usneDile}
-          usneGhetle={mockData.usneGhetle}
-          savingInBank={mockData.savingInBank}
-        />
-
-        {/* Investment & Lending Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <FinancialSummaryCards data={financialData} />
+        
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <InvestmentBreakdown data={investmentData} />
-          <PersonLendingTable data={personLendingData} />
+          <LendBorrowOverview data={lendBorrowData} />
         </div>
 
-        {/* Lend/Borrow Overview */}
-        <LendBorrowOverview data={lendBorrowData} />
+        <PersonLendingTable data={personLendingData} />
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <CategoryPieChart data={mockData.categoryData} />
-          <MonthlyTrendsChart data={mockData.monthlyData} />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <CategoryPieChart data={transactions} />
+          <MonthlyTrendsChart data={transactions} />
         </div>
       </div>
+
+      <FloatingAddButton onClick={() => setShowAddModal(true)} />
+      <AddExpenseModal open={showAddModal} onOpenChange={setShowAddModal} />
     </DashboardLayout>
   );
-};
-
-export default Index;
+}

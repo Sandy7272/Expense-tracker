@@ -10,20 +10,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useTransactions, CreateTransactionData } from "@/hooks/useTransactions";
 
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ExpenseFormData) => Promise<void>;
-}
-
-interface ExpenseFormData {
-  date: Date;
-  category: string;
-  description: string;
-  amount: number;
-  type: 'income' | 'expense';
-  name: string;
 }
 
 const categories = [
@@ -32,48 +23,48 @@ const categories = [
   'Salary', 'Freelance', 'Investment', 'Other'
 ];
 
-export function AddExpenseModal({ open, onOpenChange, onSubmit }: AddExpenseModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const [date, setDate] = useState<Date>(new Date());
   const [formData, setFormData] = useState({
     category: '',
     description: '',
     amount: '',
     type: 'expense' as 'income' | 'expense',
-    name: 'Sandy'
+    person: ''
   });
+
+  const { createTransaction } = useTransactions();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    try {
-      const data: ExpenseFormData = {
-        date,
-        category: formData.category,
-        description: formData.description,
-        amount: parseFloat(formData.amount),
-        type: formData.type,
-        name: formData.name
-      };
-
-      await onSubmit(data);
-      
-      // Reset form
-      setFormData({
-        category: '',
-        description: '',
-        amount: '',
-        type: 'expense',
-        name: 'Sandy'
-      });
-      setDate(new Date());
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Failed to add transaction:', error);
-    } finally {
-      setIsLoading(false);
+    if (!formData.category || !formData.amount) {
+      return;
     }
+
+    const data: CreateTransactionData = {
+      date: format(date, 'yyyy-MM-dd'),
+      category: formData.category,
+      description: formData.description,
+      amount: parseFloat(formData.amount),
+      type: formData.type,
+      person: formData.person
+    };
+
+    createTransaction.mutate(data, {
+      onSuccess: () => {
+        // Reset form
+        setFormData({
+          category: '',
+          description: '',
+          amount: '',
+          type: 'expense',
+          person: ''
+        });
+        setDate(new Date());
+        onOpenChange(false);
+      }
+    });
   };
 
   return (
@@ -173,7 +164,6 @@ export function AddExpenseModal({ open, onOpenChange, onSubmit }: AddExpenseModa
               placeholder="What was this transaction for?"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              required
               className="resize-none"
             />
           </div>
@@ -192,15 +182,14 @@ export function AddExpenseModal({ open, onOpenChange, onSubmit }: AddExpenseModa
             />
           </div>
 
-          {/* Name */}
+          {/* Person */}
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="person">Person/Business (Optional)</Label>
             <Input
-              id="name"
-              placeholder="Your name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              required
+              id="person"
+              placeholder="Who was involved in this transaction?"
+              value={formData.person}
+              onChange={(e) => setFormData(prev => ({ ...prev, person: e.target.value }))}
             />
           </div>
 
@@ -216,10 +205,10 @@ export function AddExpenseModal({ open, onOpenChange, onSubmit }: AddExpenseModa
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={createTransaction.isPending || !formData.category || !formData.amount}
               className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {isLoading ? (
+              {createTransaction.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Adding...

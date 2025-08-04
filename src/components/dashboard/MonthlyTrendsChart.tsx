@@ -113,7 +113,7 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
               Avg Income
             </p>
             <p className="text-lg font-semibold text-income">
-              ${(data.reduce((sum, item) => sum + item.income, 0) / data.length).toLocaleString()}
+              ${data.length > 0 ? (data.reduce((sum, item) => sum + item.income, 0) / data.length).toLocaleString() : '0'}
             </p>
           </div>
           <div className="text-center">
@@ -121,7 +121,7 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
               Avg Expenses
             </p>
             <p className="text-lg font-semibold text-expense">
-              ${(data.reduce((sum, item) => sum + item.expenses, 0) / data.length).toLocaleString()}
+              ${data.length > 0 ? (data.reduce((sum, item) => sum + item.expenses, 0) / data.length).toLocaleString() : '0'}
             </p>
           </div>
           <div className="text-center">
@@ -129,9 +129,9 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
               Best Month
             </p>
             <p className="text-lg font-semibold text-success">
-              {data.reduce((best, current) => 
+              {data.length > 0 ? data.reduce((best, current) => 
                 (current.income - current.expenses) > (best.income - best.expenses) ? current : best
-              ).month}
+              ).month : 'No data'}
             </p>
           </div>
         </div>

@@ -29,10 +29,42 @@ export default function Index() {
       emi: 15000,
       usneDile: 25000,
       usneGhetle: 8000,
-      savingInBank: income - expenses,
-      categoryData: [],
-      monthlyData: []
+      savingInBank: income - expenses
     };
+  }, [transactions]);
+
+  // Transform transactions to category data for pie chart
+  const categoryData = useMemo(() => {
+    const categoryTotals = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((acc, t) => {
+        acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+    return Object.entries(categoryTotals).map(([category, amount], index) => ({
+      category,
+      amount,
+      color: `hsl(${index * 45}, 70%, 60%)`
+    }));
+  }, [transactions]);
+
+  // Transform transactions to monthly data for trends chart
+  const monthlyData = useMemo(() => {
+    const monthlyTotals = transactions.reduce((acc, t) => {
+      const month = format(new Date(t.date), 'MMM yyyy');
+      if (!acc[month]) {
+        acc[month] = { month, income: 0, expenses: 0 };
+      }
+      if (t.type === 'income') {
+        acc[month].income += Number(t.amount);
+      } else {
+        acc[month].expenses += Number(t.amount);
+      }
+      return acc;
+    }, {} as Record<string, { month: string; income: number; expenses: number }>);
+
+    return Object.values(monthlyTotals).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   }, [transactions]);
 
   const availableMonths = ["December 2024", "January 2025", "February 2025"];
@@ -50,12 +82,12 @@ export default function Index() {
     usneDile: 45000,
     usnePrtAle: 12000,
     usneGhetle: 23000,
-    netAmount: 34000
+    usnePrtDile: 8000
   };
 
   const personLendingData = [
-    { name: "Alex Johnson", amount: 1500, type: "lent", dueDate: "2024-03-15", status: "pending" },
-    { name: "Sarah Chen", amount: 800, type: "borrowed", dueDate: "2024-03-10", status: "overdue" },
+    { name: "Alex Johnson", amount: 1500, totalRemaining: 500 },
+    { name: "Sarah Chen", amount: 800, totalRemaining: -300 },
   ];
 
   return (
@@ -71,7 +103,7 @@ export default function Index() {
           <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />
         </div>
 
-        <FinancialSummaryCards data={financialData} />
+        <FinancialSummaryCards {...financialData} />
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <InvestmentBreakdown data={investmentData} />
@@ -81,8 +113,8 @@ export default function Index() {
         <PersonLendingTable data={personLendingData} />
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <CategoryPieChart data={transactions} />
-          <MonthlyTrendsChart data={transactions} />
+          <CategoryPieChart data={categoryData} />
+          <MonthlyTrendsChart data={monthlyData} />
         </div>
       </div>
 

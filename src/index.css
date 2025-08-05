@@ -157,7 +157,7 @@
     @apply flex flex-col items-center justify-center p-4 rounded-xl border border-border/50 
            bg-card/50 hover:bg-accent/50 transition-all duration-200 cursor-pointer
            hover:border-border hover:scale-[1.02] active:scale-[0.98]
-           min-h-[100px] text-center space-y-2 group;
+           min-h-[100px] text-center space-y-2;
   }
 
   .category-button.selected {

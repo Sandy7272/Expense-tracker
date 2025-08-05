@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,17 +10,12 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useTransactions, CreateTransactionData } from "@/hooks/useTransactions";
+import { CategorySelector } from "./CategorySelector";
 
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const categories = [
-  'Food', 'Transport', 'Entertainment', 'Shopping', 
-  'Bills', 'Health', 'Education', 'Travel', 
-  'Salary', 'Freelance', 'Investment', 'Other'
-];
 
 export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const [date, setDate] = useState<Date>(new Date());
@@ -69,10 +63,10 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-card via-card to-background border-border/50">
+      <DialogContent className="glass-card max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-heading font-semibold text-foreground">
-            ➕ Add New Transaction
+          <DialogTitle className="text-xl font-semibold text-foreground">
+            Add New Transaction
           </DialogTitle>
         </DialogHeader>
 
@@ -83,7 +77,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
               type="button"
               onClick={() => setFormData(prev => ({ ...prev, type: 'expense' }))}
               className={cn(
-                "p-4 rounded-xl border-2 transition-all duration-200 text-left",
+                "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
                 formData.type === 'expense'
                   ? "border-expense bg-expense/10 text-expense"
                   : "border-border hover:border-expense/50 text-muted-foreground"
@@ -97,7 +91,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
               type="button"
               onClick={() => setFormData(prev => ({ ...prev, type: 'income' }))}
               className={cn(
-                "p-4 rounded-xl border-2 transition-all duration-200 text-left",
+                "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
                 formData.type === 'income'
                   ? "border-income bg-income/10 text-income"
                   : "border-border hover:border-income/50 text-muted-foreground"
@@ -109,96 +103,93 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             </button>
           </div>
 
-          {/* Date */}
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(newDate) => newDate && setDate(newDate)}
-                  initialFocus
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Basic Info */}
+            <div className="space-y-6">
+              {/* Date */}
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal input-professional",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 glass-card">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(newDate) => newDate && setDate(newDate)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Amount */}
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount ($)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.amount}
+                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                  className="input-professional text-lg"
+                  required
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select 
-              value={formData.category} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="What was this transaction for?"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="input-professional resize-none"
+                  rows={3}
+                />
+              </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="What was this transaction for?"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="resize-none"
-            />
-          </div>
+              {/* Person */}
+              <div className="space-y-2">
+                <Label htmlFor="person">Person/Business (Optional)</Label>
+                <Input
+                  id="person"
+                  placeholder="Who was involved in this transaction?"
+                  value={formData.person}
+                  onChange={(e) => setFormData(prev => ({ ...prev, person: e.target.value }))}
+                  className="input-professional"
+                />
+              </div>
+            </div>
 
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              required
-            />
-          </div>
-
-          {/* Person */}
-          <div className="space-y-2">
-            <Label htmlFor="person">Person/Business (Optional)</Label>
-            <Input
-              id="person"
-              placeholder="Who was involved in this transaction?"
-              value={formData.person}
-              onChange={(e) => setFormData(prev => ({ ...prev, person: e.target.value }))}
-            />
+            {/* Right Column - Category Selection */}
+            <div>
+              <CategorySelector
+                selectedCategory={formData.category}
+                onCategoryChange={(category) => setFormData(prev => ({ ...prev, category }))}
+                transactionType={formData.type}
+              />
+            </div>
           </div>
 
           {/* Submit Button */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t border-border/50">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 btn-professional"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -206,7 +197,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             <Button
               type="submit"
               disabled={createTransaction.isPending || !formData.category || !formData.amount}
-              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="flex-1 btn-professional bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {createTransaction.isPending ? (
                 <>

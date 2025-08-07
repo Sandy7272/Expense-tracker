@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useSettings } from "@/hooks/useSettings";
+import { useTheme } from "next-themes";
 import { 
   Settings as SettingsIcon, 
   User, 
@@ -22,6 +24,18 @@ import {
 } from "lucide-react";
 
 export default function Settings() {
+  const { settings, updateSettings } = useSettings();
+  const { theme, setTheme } = useTheme();
+
+  const handleSettingChange = (key: string, value: any) => {
+    updateSettings.mutate({ [key]: value });
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    handleSettingChange('theme', newTheme);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -113,25 +127,34 @@ export default function Settings() {
                 <h4 className="font-medium">Dark Mode</h4>
                 <p className="text-sm text-muted-foreground">Use dark theme for better visibility</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={theme === 'dark'}
+                onCheckedChange={(checked) => handleThemeChange(checked ? 'dark' : 'light')}
+              />
             </div>
             <Separator />
             <div className="space-y-2">
               <Label>Currency Display</Label>
-              <Select defaultValue="inr">
+              <Select 
+                value={settings?.currency || 'INR'} 
+                onValueChange={(value) => handleSettingChange('currency', value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="inr">Indian Rupee (₹)</SelectItem>
-                  <SelectItem value="usd">US Dollar ($)</SelectItem>
-                  <SelectItem value="eur">Euro (€)</SelectItem>
+                  <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
+                  <SelectItem value="USD">US Dollar ($)</SelectItem>
+                  <SelectItem value="EUR">Euro (€)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Language</Label>
-              <Select defaultValue="en">
+              <Select 
+                value={settings?.language || 'en'} 
+                onValueChange={(value) => handleSettingChange('language', value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

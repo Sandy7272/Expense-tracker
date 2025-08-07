@@ -1,13 +1,19 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
 import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
+import { LendingTransactionModal } from "@/components/dashboard/LendingTransactionModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
+import { useLendingTransactions } from "@/hooks/useLendingTransactions";
 import { Plus, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 
 export default function Lending() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { transactions, isLoading } = useLendingTransactions();
+
   const recentTransactions = [
     {
       id: 1,
@@ -97,7 +103,7 @@ export default function Lending() {
             <h1 className="text-3xl font-heading font-bold text-foreground">Lending & Borrowing</h1>
             <p className="text-muted-foreground">Track money lent to and borrowed from friends & family</p>
           </div>
-          <Button className="cyber-button">
+          <Button className="cyber-button" onClick={() => setIsModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Transaction
           </Button>
@@ -225,6 +231,12 @@ export default function Lending() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Lending Transaction Modal */}
+        <LendingTransactionModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+        />
       </div>
     </DashboardLayout>
   );

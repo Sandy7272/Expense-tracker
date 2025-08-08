@@ -7,22 +7,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { Search, Filter, Download, Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { useGoogleSheets } from "@/hooks/useGoogleSheets";
+import { useTransactions } from "@/hooks/useTransactions";
+import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 
 export default function Transactions() {
-  const { data, isLoading } = useGoogleSheets();
+  const { transactions, isLoading } = useTransactions();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [addOpen, setAddOpen] = useState(false);
 
-  const transactions = data?.transactions || [];
-  
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || transaction.category === categoryFilter;
-    const matchesType = typeFilter === "all" || transaction.type.toLowerCase() === typeFilter;
-    
+  const filteredTransactions = transactions.filter((transaction) => {
+    const desc = (transaction.description || "").toLowerCase();
+    const cat = (transaction.category || "").toLowerCase();
+    const type = (transaction.type || "").toLowerCase();
+    const matchesSearch =
+      desc.includes(searchTerm.toLowerCase()) ||
+      cat.includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      categoryFilter === "all" || transaction.category === categoryFilter;
+    const matchesType = typeFilter === "all" || type === typeFilter;
     return matchesSearch && matchesCategory && matchesType;
   });
 
@@ -46,7 +50,7 @@ export default function Transactions() {
             <h1 className="text-3xl font-heading font-bold text-foreground">Transactions</h1>
             <p className="text-muted-foreground">Manage and track all your financial transactions</p>
           </div>
-          <Button className="cyber-button">
+          <Button className="cyber-button" onClick={() => setAddOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Transaction
           </Button>
@@ -87,7 +91,6 @@ export default function Transactions() {
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
                   <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="investment">Investment</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" className="cyber-button">
@@ -144,7 +147,7 @@ export default function Transactions() {
                           }`}>
                             {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
                           </div>
-                          <div className="text-sm text-muted-foreground">{transaction.name}</div>
+                          <div className="text-sm text-muted-foreground">{transaction.person || ""}</div>
                         </div>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
@@ -165,6 +168,7 @@ export default function Transactions() {
             )}
           </CardContent>
         </Card>
+        <AddExpenseModal open={addOpen} onOpenChange={setAddOpen} />
       </div>
     </DashboardLayout>
   );

@@ -26,7 +26,7 @@ export function MonthSelector({ selectedMonth, onMonthChange, availableMonths }:
           )}>
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
-          <SelectContent className="glass-card border-white/20 backdrop-blur-xl">
+          <SelectContent className="bg-popover border border-border shadow-md z-[60]">
             {availableMonths.map((month) => (
               <SelectItem 
                 key={month} 

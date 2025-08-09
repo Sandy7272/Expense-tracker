@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useTransactions, CreateTransactionData } from "@/hooks/useTransactions";
+import type { Transaction } from "@/hooks/useTransactions";
 import { CategorySelector } from "./CategorySelector";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -26,6 +27,7 @@ import {
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  transaction?: Transaction;
 }
 
 const formSchema = z.object({
@@ -42,8 +44,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
-  const { createTransaction } = useTransactions();
+export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseModalProps) {
+  const { createTransaction, updateTransaction } = useTransactions();
   const [dateOpen, setDateOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -59,35 +61,67 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
-    const data: CreateTransactionData = {
-      date: format(values.date, "yyyy-MM-dd"),
-      category: values.category,
-      description: values.description || "",
-      amount: parseFloat(values.amount),
-      type: values.type,
-      person: values.person || "",
-    };
+useEffect(() => {
+  if (open) {
+    if (transaction) {
+      form.reset({
+        type: transaction.type,
+        date: new Date(transaction.date),
+        category: transaction.category || "",
+        amount: String(transaction.amount ?? ""),
+        description: transaction.description || "",
+        person: transaction.person || "",
+      });
+    } else {
+      form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "" });
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [open, transaction]);
 
+const onSubmit = (values: FormValues) => {
+  const data: CreateTransactionData = {
+    date: format(values.date, "yyyy-MM-dd"),
+    category: values.category,
+    description: values.description || "",
+    amount: parseFloat(values.amount),
+    type: values.type,
+    person: values.person || "",
+  };
+
+  if (transaction) {
+    updateTransaction.mutate(
+      { id: transaction.id, data },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
+      }
+    );
+  } else {
     createTransaction.mutate(data, {
       onSuccess: () => {
         form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "" });
         onOpenChange(false);
       },
     });
-  };
+  }
+};
 
-  const selectedType = form.watch("type");
-  const selectedDate = form.watch("date");
+const selectedType = form.watch("type");
+const selectedDate = form.watch("date");
+const isSubmitting = transaction ? updateTransaction.isPending : createTransaction.isPending;
+const spinnerText = transaction ? "Saving..." : "Adding...";
+const submitLabel = transaction ? "Save changes" : `Add ${selectedType === "income" ? "Income" : "Expense"}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-foreground">
-            Add New Transaction
-          </DialogTitle>
-        </DialogHeader>
+<DialogHeader>
+  <DialogTitle className="text-xl font-semibold text-foreground">
+    {transaction ? "Edit Transaction" : "Add New Transaction"}
+  </DialogTitle>
+</DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

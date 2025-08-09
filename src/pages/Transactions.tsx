@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,28 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { Search, Filter, Download, Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
+import type { Transaction } from "@/hooks/useTransactions";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Transactions() {
-  const { transactions, isLoading } = useTransactions();
+  const { transactions, isLoading, deleteTransaction } = useTransactions();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
 
   const filteredTransactions = transactions.filter((transaction) => {
     const desc = (transaction.description || "").toLowerCase();
@@ -168,7 +182,43 @@ export default function Transactions() {
             )}
           </CardContent>
         </Card>
-        <AddExpenseModal open={addOpen} onOpenChange={setAddOpen} />
+        <AddExpenseModal
+          open={addOpen}
+          onOpenChange={(open) => {
+            setAddOpen(open)
+            if (!open) setSelectedTx(null)
+          }}
+          transaction={selectedTx ?? undefined}
+        />
+
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete transaction?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the transaction
+                {txToDelete?.description ? ` "${txToDelete.description}"` : ""} with amount {formatCurrency(Math.abs(txToDelete?.amount ?? 0))}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (txToDelete) {
+                    deleteTransaction.mutate(txToDelete.id, {
+                      onSuccess: () => {
+                        setDeleteOpen(false)
+                        setTxToDelete(null)
+                      },
+                    })
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

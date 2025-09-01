@@ -300,16 +300,16 @@ const submitLabel = transaction ? "Save changes" : `Add ${selectedType === "inco
               </Button>
               <Button
                 type="submit"
-                disabled={createTransaction.isPending || !form.formState.isValid}
+                disabled={isSubmitting || !form.formState.isValid}
                 className="flex-1 btn-professional bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                {createTransaction.isPending ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Adding...
+                    {spinnerText}
                   </>
                 ) : (
-                  `Add ${selectedType === "income" ? "Income" : "Expense"}`
+                  submitLabel
                 )}
               </Button>
             </div>

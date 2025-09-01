@@ -14,6 +14,12 @@ interface UserSettings {
   notifications_loan_reminders: boolean;
   auto_sync: boolean;
   sheet_url?: string;
+  google_access_token?: string;
+  google_refresh_token?: string;
+  google_token_expires_at?: string;
+  last_synced?: string;
+  sync_status?: string;
+  sync_errors?: string;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +33,9 @@ interface UpdateSettingsData {
   notifications_loan_reminders?: boolean;
   auto_sync?: boolean;
   sheet_url?: string;
+  google_access_token?: string;
+  google_refresh_token?: string;
+  google_token_expires_at?: string;
 }
 
 export const useSettings = () => {
@@ -43,7 +52,7 @@ export const useSettings = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { data: settings, error } = await supabase
         .from('user_settings')
         .select('*')
         .eq('user_id', user.id)
@@ -52,7 +61,7 @@ export const useSettings = () => {
       if (error) throw error;
 
       // If no settings exist, create default settings
-      if (!data) {
+      if (!settings) {
         const defaultSettings = {
           user_id: user.id,
           currency: 'INR',
@@ -74,7 +83,7 @@ export const useSettings = () => {
         return newSettings as UserSettings;
       }
 
-      return data as UserSettings;
+      return settings as UserSettings;
     },
     enabled: !!user?.id,
   });

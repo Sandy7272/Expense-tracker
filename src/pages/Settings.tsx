@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useSettings } from "@/hooks/useSettings";
+import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
 import { useTheme } from "next-themes";
 import { 
   Settings as SettingsIcon, 
@@ -20,11 +21,22 @@ import {
   Upload,
   RefreshCw,
   Moon,
-  Sun
+  Sun,
+  ExternalLink,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 
 export default function Settings() {
   const { settings, updateSettings } = useSettings();
+  const { 
+    authenticate, 
+    syncData, 
+    testConnection, 
+    isAuthenticating, 
+    isSyncing,
+    isTesting 
+  } = useGoogleSheetsSync();
   const { theme, setTheme } = useTheme();
 
   const handleSettingChange = (key: string, value: any) => {
@@ -80,35 +92,99 @@ export default function Settings() {
               <Database className="h-5 w-5" />
               Google Sheets Integration
             </CardTitle>
-            <CardDescription>Manage your data synchronization settings</CardDescription>
+            <CardDescription>Import and sync your financial data from Google Sheets</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Authentication Status */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium">Google Account</h4>
+                <p className="text-sm text-muted-foreground">Connect your Google account to access sheets</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {settings?.google_access_token ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-green-600">Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-600">Not Connected</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {!settings?.google_access_token && (
+              <Button
+                onClick={() => authenticate.mutate()}
+                disabled={authenticate.isPending || isAuthenticating}
+                className="w-full flex items-center gap-2"
+                variant="outline"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {authenticate.isPending || isAuthenticating ? 'Connecting...' : 'Connect Google Account'}
+              </Button>
+            )}
+
+            <Separator />
+
+            {/* Auto Sync Setting */}
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium">Auto Sync</h4>
                 <p className="text-sm text-muted-foreground">Automatically sync data every 5 minutes</p>
               </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <Label>Sheet URL</Label>
-              <Input 
-                placeholder="https://docs.google.com/spreadsheets/d/..." 
-                defaultValue="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+              <Switch 
+                checked={settings?.auto_sync || false}
+                onCheckedChange={(checked) => handleSettingChange('auto_sync', checked)}
               />
             </div>
+            
+            <Separator />
+
+            {/* Sheet URL */}
+            <div className="space-y-2">
+              <Label>Google Sheets URL</Label>
+              <Input 
+                placeholder="https://docs.google.com/spreadsheets/d/..." 
+                value={settings?.sheet_url || ''}
+                onChange={(e) => handleSettingChange('sheet_url', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Make sure your sheet has columns: Date, Type, Category, Description, Amount, Person
+              </p>
+            </div>
+
+            {/* Action Buttons */}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Test Connection
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => testConnection.mutate(settings?.sheet_url || '')}
+                disabled={!settings?.sheet_url || isTesting}
+              >
+                <RefreshCw className={`h-4 w-4 ${isTesting ? 'animate-spin' : ''}`} />
+                {isTesting ? 'Testing...' : 'Test Connection'}
               </Button>
-              <Button className="cyber-button">Update Sheet URL</Button>
+              <Button 
+                onClick={() => syncData.mutate(settings?.sheet_url)}
+                disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing...' : 'Sync Now'}
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-success text-success-foreground">Connected</Badge>
-              <span className="text-sm text-muted-foreground">Last synced: 2 minutes ago</span>
-            </div>
+
+            {/* Sync Status */}
+            {settings?.last_synced && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Last synced: {new Date(settings.last_synced).toLocaleString()}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -215,13 +291,18 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => syncData.mutate(settings?.sheet_url)}
+                disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+              >
+                <Upload className="h-4 w-4" />
+                {isSyncing ? 'Importing...' : 'Import from Sheets'}
+              </Button>
               <Button variant="outline" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Export Data
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Import Data
               </Button>
             </div>
             <Separator />

@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
-import { Search, Filter, Download, Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import type { Transaction } from "@/hooks/useTransactions";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
+import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
+import { useSettings } from "@/hooks/useSettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +25,8 @@ import {
 
 export default function Transactions() {
   const { transactions, isLoading, deleteTransaction } = useTransactions();
+  const { syncData, isSyncing } = useGoogleSheetsSync();
+  const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -64,10 +68,21 @@ export default function Transactions() {
             <h1 className="text-3xl font-heading font-bold text-foreground">Transactions</h1>
             <p className="text-muted-foreground">Manage and track all your financial transactions</p>
           </div>
-          <Button className="cyber-button" onClick={() => setAddOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Transaction
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => syncData.mutate(settings?.sheet_url)}
+              disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync Sheets'}
+            </Button>
+            <Button className="add-transaction-btn" onClick={() => setAddOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -107,7 +122,7 @@ export default function Transactions() {
                   <SelectItem value="expense">Expense</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="cyber-button">
+              <Button variant="outline" className="btn-professional">
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -149,6 +164,15 @@ export default function Transactions() {
                               {transaction.type}
                             </Badge>
                             <span className="text-sm text-muted-foreground">{transaction.category}</span>
+                            {transaction.source === 'google_sheets' && (
+                              <>
+                                <span className="text-sm text-muted-foreground">•</span>
+                                <Badge variant="outline" className="text-xs">
+                                  <Database className="h-3 w-3 mr-1" />
+                                  Imported
+                                </Badge>
+                              </>
+                            )}
                             <span className="text-sm text-muted-foreground">•</span>
                             <span className="text-sm text-muted-foreground">{transaction.date}</span>
                           </div>

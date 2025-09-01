@@ -1,1 +1,50 @@
 project_id = "hiypurwywcvlrwlmopdf"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+port = 54327
+image_transformation_enabled = true
+
+[auth]
+enabled = true
+port = 54328
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+security_update_password_require_reauthentication = false
+
+[edge-runtime]
+enabled = true
+port = 54329
+
+[[edge-runtime.env_vars]]
+name = "SUPABASE_URL"
+value = "http://localhost:54321"
+
+[[edge-runtime.env_vars]]
+name = "SUPABASE_ANON_KEY" 
+value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeXB1cnd5d2N2bHJ3bG1vcGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5OTU3NjMsImV4cCI6MjA2OTU3MTc2M30.ebWiw6NF0074LNM6uCxeqMoM-k4a4sHdRRnkNLG5McE"
+
+[functions.google-sheets-sync]
+verify_jwt = false

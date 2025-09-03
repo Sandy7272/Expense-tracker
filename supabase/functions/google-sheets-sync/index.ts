@@ -266,11 +266,13 @@ serve(async (req) => {
         })
         .eq('user_id', state)
 
-      // Redirect to settings page with success message
+      // Redirect to frontend settings page with success message
+      const frontendUrl = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
+      
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${Deno.env.get('SUPABASE_URL').replace('supabase.co', 'netlify.app')}/settings?auth=success`,
+          'Location': `${frontendUrl}/settings?auth=success`,
         },
       })
     }

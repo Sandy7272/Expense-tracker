@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/currency";
-import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database } from "lucide-react";
+import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database, Upload } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import type { Transaction } from "@/hooks/useTransactions";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
 import { useSettings } from "@/hooks/useSettings";
+import { CsvImporter } from "@/components/CsvImporter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,16 +26,27 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Transactions() {
-  const { transactions, isLoading, deleteTransaction } = useTransactions();
+  const { transactions, isLoading, deleteTransaction, createTransaction } = useTransactions();
   const { syncData, isSyncing } = useGoogleSheetsSync();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
+
+  const handleCsvImport = async (importedTransactions: any[]) => {
+    const promises = importedTransactions.map(tx => 
+      createTransaction.mutateAsync({
+        ...tx,
+        source: 'csv'
+      })
+    );
+    await Promise.all(promises);
+  };
 
   const filteredTransactions = transactions.filter((transaction) => {
     const desc = (transaction.description || "").toLowerCase();
@@ -77,6 +90,14 @@ export default function Transactions() {
             >
               <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
               {isSyncing ? 'Syncing...' : 'Sync Sheets'}
+            </Button>
+            <Button
+              onClick={() => setCsvImportOpen(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Import CSV
             </Button>
             <Button className="add-transaction-btn" onClick={() => setAddOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -164,12 +185,15 @@ export default function Transactions() {
                               {transaction.type}
                             </Badge>
                             <span className="text-sm text-muted-foreground">{transaction.category}</span>
-                            {transaction.source === 'google_sheets' && (
+                            {(transaction.source === 'google_sheets' || transaction.source === 'csv') && (
                               <>
                                 <span className="text-sm text-muted-foreground">•</span>
                                 <Badge variant="outline" className="text-xs">
-                                  <Database className="h-3 w-3 mr-1" />
-                                  Imported
+                                  {transaction.source === 'google_sheets' ? (
+                                    <><Database className="h-3 w-3 mr-1" />Sheets</>
+                                  ) : (
+                                    <><Upload className="h-3 w-3 mr-1" />CSV</>
+                                  )}
                                 </Badge>
                               </>
                             )}
@@ -227,6 +251,18 @@ export default function Transactions() {
           }}
           transaction={selectedTx ?? undefined}
         />
+
+        <Dialog open={csvImportOpen} onOpenChange={setCsvImportOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Import CSV Transactions</DialogTitle>
+            </DialogHeader>
+            <CsvImporter 
+              onImport={handleCsvImport}
+              onClose={() => setCsvImportOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent>

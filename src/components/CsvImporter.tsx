@@ -97,11 +97,11 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
       // Auto-detect column mappings
       const autoMapping: ColumnMapping = {
         date: headers.find(h => /date/i.test(h)) || '',
-        type: headers.find(h => /type|debit|credit/i.test(h)) || '',
+        type: headers.find(h => /type|debit|credit/i.test(h)) || 'auto-detect',
         category: headers.find(h => /category|tag/i.test(h)) || '',
         description: headers.find(h => /description|memo|details|note/i.test(h)) || '',
         amount: headers.find(h => /amount|value|total|sum/i.test(h)) || '',
-        person: headers.find(h => /person|name|payee/i.test(h)) || ''
+        person: headers.find(h => /person|name|payee/i.test(h)) || 'none'
       };
       
       setMapping(autoMapping);
@@ -159,7 +159,7 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
         
         // Determine type
         let type: 'income' | 'expense' = 'expense';
-        if (mapping.type && row[mapping.type]) {
+        if (mapping.type && mapping.type !== '' && row[mapping.type]) {
           const typeValue = row[mapping.type].toLowerCase();
           if (typeValue.includes('income') || typeValue.includes('credit') || amount > 0) {
             type = 'income';
@@ -177,7 +177,7 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
           category: row[mapping.category] || 'Other',
           description: row[mapping.description] || 'Imported transaction',
           amount,
-          person: mapping.person ? row[mapping.person] : undefined
+          person: mapping.person && mapping.person !== '' ? row[mapping.person] : undefined
         };
       }).filter(tx => tx.amount > 0);
 
@@ -360,12 +360,12 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
 
               <div>
                 <Label htmlFor="type-mapping">Type Column</Label>
-                <Select value={mapping.type} onValueChange={(value) => setMapping(prev => ({ ...prev, type: value }))}>
+                <Select value={mapping.type || 'auto-detect'} onValueChange={(value) => setMapping(prev => ({ ...prev, type: value === 'auto-detect' ? '' : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Auto-detect from amount</SelectItem>
+                    <SelectItem value="auto-detect">Auto-detect from amount</SelectItem>
                     {headers.map(header => (
                       <SelectItem key={header} value={header}>{header}</SelectItem>
                     ))}
@@ -403,12 +403,12 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
 
               <div>
                 <Label htmlFor="person-mapping">Person Column</Label>
-                <Select value={mapping.person} onValueChange={(value) => setMapping(prev => ({ ...prev, person: value }))}>
+                <Select value={mapping.person || 'none'} onValueChange={(value) => setMapping(prev => ({ ...prev, person: value === 'none' ? '' : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select person column (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {headers.map(header => (
                       <SelectItem key={header} value={header}>{header}</SelectItem>
                     ))}

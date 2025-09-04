@@ -9,6 +9,7 @@ import Transactions from "./pages/Transactions";
 import Analytics from "./pages/Analytics";
 import Investments from "./pages/Investments";
 import Lending from "./pages/Lending";
+import Loans from "./pages/Loans";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
           <Route path="/lending" element={<ProtectedRoute><Lending /></ProtectedRoute>} />
+          <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

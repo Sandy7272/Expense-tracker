@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -35,6 +35,51 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      google_sheets_config: {
+        Row: {
+          category_sheet_range: string | null
+          column_mappings: Json | null
+          created_at: string
+          data_start_row: number | null
+          headers_row: number | null
+          id: string
+          is_active: boolean | null
+          sheet_id: string
+          sheet_name: string
+          transaction_sheet_range: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_sheet_range?: string | null
+          column_mappings?: Json | null
+          created_at?: string
+          data_start_row?: number | null
+          headers_row?: number | null
+          id?: string
+          is_active?: boolean | null
+          sheet_id: string
+          sheet_name: string
+          transaction_sheet_range?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_sheet_range?: string | null
+          column_mappings?: Json | null
+          created_at?: string
+          data_start_row?: number | null
+          headers_row?: number | null
+          id?: string
+          is_active?: boolean | null
+          sheet_id?: string
+          sheet_name?: string
+          transaction_sheet_range?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -78,6 +123,104 @@ export type Database = {
           related_transaction_id?: string | null
           status?: string
           type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loan_payments: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          id: string
+          interest_component: number | null
+          loan_id: string
+          notes: string | null
+          outstanding_balance: number | null
+          payment_date: string
+          payment_method: string | null
+          principal_component: number | null
+          status: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          id?: string
+          interest_component?: number | null
+          loan_id: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          payment_date: string
+          payment_method?: string | null
+          principal_component?: number | null
+          status?: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          id?: string
+          interest_component?: number | null
+          loan_id?: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          payment_date?: string
+          payment_method?: string | null
+          principal_component?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loans: {
+        Row: {
+          created_at: string
+          id: string
+          interest_rate: number
+          lender_name: string | null
+          loan_name: string
+          loan_type: string | null
+          monthly_emi: number
+          principal_amount: number
+          start_date: string
+          status: string
+          tenure_months: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_rate: number
+          lender_name?: string | null
+          loan_name: string
+          loan_type?: string | null
+          monthly_emi: number
+          principal_amount: number
+          start_date: string
+          status?: string
+          tenure_months: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_rate?: number
+          lender_name?: string | null
+          loan_name?: string
+          loan_type?: string | null
+          monthly_emi?: number
+          principal_amount?: number
+          start_date?: string
+          status?: string
+          tenure_months?: number
           updated_at?: string
           user_id?: string
         }
@@ -163,12 +306,18 @@ export type Database = {
           auto_sync: boolean
           created_at: string
           currency: string
+          google_access_token: string | null
+          google_refresh_token: string | null
+          google_token_expires_at: string | null
           id: string
           language: string
+          last_synced: string | null
           notifications_budget_alerts: boolean
           notifications_email: boolean
           notifications_loan_reminders: boolean
           sheet_url: string | null
+          sync_errors: string | null
+          sync_status: string | null
           theme: string
           updated_at: string
           user_id: string
@@ -177,12 +326,18 @@ export type Database = {
           auto_sync?: boolean
           created_at?: string
           currency?: string
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id?: string
           language?: string
+          last_synced?: string | null
           notifications_budget_alerts?: boolean
           notifications_email?: boolean
           notifications_loan_reminders?: boolean
           sheet_url?: string | null
+          sync_errors?: string | null
+          sync_status?: string | null
           theme?: string
           updated_at?: string
           user_id: string
@@ -191,12 +346,18 @@ export type Database = {
           auto_sync?: boolean
           created_at?: string
           currency?: string
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id?: string
           language?: string
+          last_synced?: string | null
           notifications_budget_alerts?: boolean
           notifications_email?: boolean
           notifications_loan_reminders?: boolean
           sheet_url?: string | null
+          sync_errors?: string | null
+          sync_status?: string | null
           theme?: string
           updated_at?: string
           user_id?: string

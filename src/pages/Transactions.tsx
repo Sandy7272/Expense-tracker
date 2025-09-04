@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/currency";
 import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database, Upload } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Transactions() {
-  const { transactions, isLoading, deleteTransaction, createTransaction } = useTransactions();
+  const { transactions, isLoading, deleteTransaction, createTransaction, bulkDeleteTransactions } = useTransactions();
   const { syncData, isSyncing } = useGoogleSheetsSync();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,6 +38,8 @@ export default function Transactions() {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const handleCsvImport = async (importedTransactions: any[]) => {
     const promises = importedTransactions.map(tx => 
@@ -46,6 +49,31 @@ export default function Transactions() {
       })
     );
     await Promise.all(promises);
+  };
+
+  const handleSelectTransaction = (transactionId: string, checked: boolean) => {
+    const newSelected = new Set(selectedTransactions);
+    if (checked) {
+      newSelected.add(transactionId);
+    } else {
+      newSelected.delete(transactionId);
+    }
+    setSelectedTransactions(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTransactions(new Set(filteredTransactions.map(tx => tx.id)));
+    } else {
+      setSelectedTransactions(new Set());
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const transactionIds = Array.from(selectedTransactions);
+    await bulkDeleteTransactions.mutateAsync(transactionIds);
+    setSelectedTransactions(new Set());
+    setBulkDeleteOpen(false);
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
@@ -154,10 +182,25 @@ export default function Transactions() {
         {/* Transactions Table */}
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>
-              {filteredTransactions.length} of {transactions.length} transactions
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>
+                  {filteredTransactions.length} of {transactions.length} transactions
+                  {selectedTransactions.size > 0 && ` • ${selectedTransactions.size} selected`}
+                </CardDescription>
+              </div>
+              {selectedTransactions.size > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setBulkDeleteOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Selected ({selectedTransactions.size})
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -170,6 +213,18 @@ export default function Transactions() {
               </div>
             ) : (
               <div className="space-y-2">
+                {/* Select All Header */}
+                {filteredTransactions.length > 0 && (
+                  <div className="flex items-center gap-4 p-2 border-b">
+                    <Checkbox
+                      checked={selectedTransactions.size === filteredTransactions.length && filteredTransactions.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Select All ({filteredTransactions.length})
+                    </span>
+                  </div>
+                )}
                 {filteredTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
@@ -177,6 +232,10 @@ export default function Transactions() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
+                        <Checkbox
+                          checked={selectedTransactions.has(transaction.id)}
+                          onCheckedChange={(checked) => handleSelectTransaction(transaction.id, checked as boolean)}
+                        />
                         <div className="w-2 h-12 rounded-full bg-gradient-to-b from-primary to-accent"></div>
                         <div>
                           <h3 className="font-semibold text-foreground">{transaction.description}</h3>
@@ -288,6 +347,23 @@ export default function Transactions() {
                 }}
               >
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete selected transactions?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete {selectedTransactions.size} transaction{selectedTransactions.size !== 1 ? 's' : ''}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBulkDelete}>
+                Delete {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

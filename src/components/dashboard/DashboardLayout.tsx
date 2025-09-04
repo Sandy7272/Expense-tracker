@@ -28,6 +28,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Investments", href: "/investments", icon: PiggyBank },
   { name: "Lending", href: "/lending", icon: Users },
+  { name: "Loans", href: "/loans", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

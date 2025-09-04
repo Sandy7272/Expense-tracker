@@ -139,6 +139,35 @@ export function useTransactions() {
     }
   });
 
+  // Add bulk delete functionality
+  const bulkDeleteTransactions = useMutation({
+    mutationFn: async (transactionIds: string[]) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .in('id', transactionIds)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, transactionIds) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast({
+        title: "Transactions deleted",
+        description: `${transactionIds.length} transaction${transactionIds.length !== 1 ? 's' : ''} deleted successfully.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete transactions: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Set up real-time subscriptions
   useEffect(() => {
     if (!user) return;
@@ -170,6 +199,7 @@ export function useTransactions() {
     error,
     createTransaction,
     updateTransaction,
-    deleteTransaction
+    deleteTransaction,
+    bulkDeleteTransactions
   };
 }

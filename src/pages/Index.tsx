@@ -4,23 +4,28 @@ import { FinancialSummaryCards } from "@/components/dashboard/FinancialSummaryCa
 import { InvestmentBreakdown } from "@/components/dashboard/InvestmentBreakdown";
 import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
 import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
-import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDateRangeFilter, DateRange } from "@/hooks/useDateRangeFilter";
 import { format } from "date-fns";
 
 export default function Index() {
-  const [selectedMonth, setSelectedMonth] = useState("January 2025");
   const [showAddModal, setShowAddModal] = useState(false);
   const { transactions, isLoading } = useTransactions();
+  const { filteredTransactions } = useDateRangeFilter();
+  
+  const handleDateRangeChange = (range: DateRange) => {
+    // Date range change is handled by the useDateRangeFilter hook
+  };
 
-  // Calculate financial data from real transactions
+  // Calculate financial data from filtered transactions
   const financialData = useMemo(() => {
-    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
-    const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+    const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
     
     return {
       totalIncome: income,
@@ -31,11 +36,11 @@ export default function Index() {
       usneGhetle: 8000,
       savingInBank: income - expenses
     };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
-  // Transform transactions to category data for pie chart
+  // Transform filtered transactions to category data for pie chart
   const categoryData = useMemo(() => {
-    const categoryTotals = transactions
+    const categoryTotals = filteredTransactions
       .filter(t => t.type === 'expense')
       .reduce((acc, t) => {
         acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
@@ -47,11 +52,11 @@ export default function Index() {
       amount,
       color: `hsl(${index * 45}, 70%, 60%)`
     }));
-  }, [transactions]);
+  }, [filteredTransactions]);
 
-  // Transform transactions to monthly data for trends chart
+  // Transform filtered transactions to monthly data for trends chart
   const monthlyData = useMemo(() => {
-    const monthlyTotals = transactions.reduce((acc, t) => {
+    const monthlyTotals = filteredTransactions.reduce((acc, t) => {
       const month = format(new Date(t.date), 'MMM yyyy');
       if (!acc[month]) {
         acc[month] = { month, income: 0, expenses: 0 };
@@ -65,9 +70,7 @@ export default function Index() {
     }, {} as Record<string, { month: string; income: number; expenses: number }>);
 
     return Object.values(monthlyTotals).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-  }, [transactions]);
-
-  const availableMonths = ["December 2024", "January 2025", "February 2025"];
+  }, [filteredTransactions]);
 
   // Mock data for other components
   const investmentData = {
@@ -100,7 +103,7 @@ export default function Index() {
             </h1>
             <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
           </div>
-          <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} availableMonths={availableMonths} />
+          <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
         </div>
 
         <FinancialSummaryCards {...financialData} />

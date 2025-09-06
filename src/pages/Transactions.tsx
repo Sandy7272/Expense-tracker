@@ -112,7 +112,7 @@ export default function Transactions() {
           <div className="flex gap-2">
             <Button
               onClick={() => syncData.mutate(settings?.sheet_url)}
-              disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+              disabled={settings?.google_auth_status !== 'connected' || !settings?.sheet_url || isSyncing}
               variant="outline"
               className="flex items-center gap-2"
             >

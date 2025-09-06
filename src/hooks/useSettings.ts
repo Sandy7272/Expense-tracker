@@ -14,8 +14,8 @@ interface UserSettings {
   notifications_loan_reminders: boolean;
   auto_sync: boolean;
   sheet_url?: string;
-  google_access_token?: string;
-  google_refresh_token?: string;
+  google_token_vault_id?: string;
+  google_auth_status?: string;
   google_token_expires_at?: string;
   last_synced?: string;
   sync_status?: string;
@@ -33,9 +33,7 @@ interface UpdateSettingsData {
   notifications_loan_reminders?: boolean;
   auto_sync?: boolean;
   sheet_url?: string;
-  google_access_token?: string;
-  google_refresh_token?: string;
-  google_token_expires_at?: string;
+  google_auth_status?: string;
 }
 
 export const useSettings = () => {

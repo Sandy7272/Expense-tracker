@@ -139,14 +139,14 @@ export function GoogleSheetsImport() {
               <div>
                 <h4 className="font-medium">Connection Status</h4>
                 <p className="text-sm text-muted-foreground">
-                  {settings?.google_access_token 
+                  {settings?.google_auth_status === 'connected'
                     ? 'Connected to your Google account' 
                     : 'Connect to start importing data'
                   }
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {settings?.google_access_token ? (
+                {settings?.google_auth_status === 'connected' ? (
                   <>
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <Badge variant="outline" className="text-green-600 border-green-600">
@@ -164,7 +164,7 @@ export function GoogleSheetsImport() {
               </div>
             </div>
 
-            {!settings?.google_access_token && (
+            {settings?.google_auth_status !== 'connected' && (
               <Button
                 onClick={() => authenticate.mutate()}
                 disabled={authenticate.isPending || isAuthenticating}
@@ -176,7 +176,7 @@ export function GoogleSheetsImport() {
             )}
           </div>
 
-          {settings?.google_access_token && (
+          {settings?.google_auth_status === 'connected' && (
             <>
               <Separator />
 

@@ -72,15 +72,29 @@ serve(async (req) => {
     if (action === 'sync') {
       console.log('🔄 Starting Google Sheets sync for user:', user.id)
 
-      // Get user's Google access token from settings
+      // Get user's Google tokens securely from vault
+      const tokenResponse = await supabase.functions.invoke('secure-google-tokens', {
+        body: { action: 'retrieve' },
+        headers: {
+          Authorization: authHeader
+        }
+      })
+
+      if (tokenResponse.error || !tokenResponse.data?.tokens) {
+        throw new Error('No Google tokens found. Please authenticate first.')
+      }
+
+      const tokens = tokenResponse.data.tokens
+      
+      // Get sheet URL from settings
       const { data: settings } = await supabase
         .from('user_settings')
-        .select('google_access_token, google_refresh_token, google_token_expires_at, sheet_url')
+        .select('sheet_url, google_auth_status')
         .eq('user_id', user.id)
         .single()
 
-      if (!settings?.google_access_token) {
-        throw new Error('No Google access token found. Please authenticate first.')
+      if (settings?.google_auth_status !== 'connected') {
+        throw new Error(`Google authentication required. Status: ${settings?.google_auth_status || 'unknown'}`)
       }
 
       const actualSheetUrl = sheetUrl || settings.sheet_url
@@ -96,11 +110,21 @@ serve(async (req) => {
       const sheetId = sheetIdMatch[1]
 
       // Check if token needs refresh
-      let accessToken = settings.google_access_token
-      if (settings.google_token_expires_at && new Date() > new Date(settings.google_token_expires_at)) {
+      let accessToken = tokens.access_token
+      if (tokens.expires_at && new Date() > new Date(tokens.expires_at)) {
         console.log('🔄 Refreshing Google access token')
-        // Refresh token logic would go here
-        // For now, we'll use the existing token
+        const refreshResponse = await supabase.functions.invoke('secure-google-tokens', {
+          body: { action: 'refresh' },
+          headers: {
+            Authorization: authHeader
+          }
+        })
+
+        if (refreshResponse.error) {
+          throw new Error('Failed to refresh Google tokens. Please re-authenticate.')
+        }
+
+        accessToken = refreshResponse.data.tokens.access_token
       }
 
       // Fetch data from Google Sheets
@@ -254,17 +278,25 @@ serve(async (req) => {
         throw new Error(`OAuth error: ${tokens.error_description}`)
       }
 
-      // Store tokens in user settings
+      // Store tokens securely in vault
       const expiresAt = new Date(Date.now() + (tokens.expires_in * 1000))
       
-      await supabase
-        .from('user_settings')
-        .update({
-          google_access_token: tokens.access_token,
-          google_refresh_token: tokens.refresh_token,
-          google_token_expires_at: expiresAt.toISOString()
-        })
-        .eq('user_id', state)
+      const storeResponse = await supabase.functions.invoke('secure-google-tokens', {
+        body: { 
+          action: 'store',
+          tokens: {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expires_at: expiresAt.toISOString()
+          }
+          user_id: state
+        }
+      })
+
+      if (storeResponse.error) {
+        console.error('Failed to store tokens securely:', storeResponse.error)
+        throw new Error('Failed to store authentication tokens securely')
+      }
 
       // Redirect to frontend settings page with success message
       const frontendUrl = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'

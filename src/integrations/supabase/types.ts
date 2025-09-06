@@ -306,9 +306,9 @@ export type Database = {
           auto_sync: boolean
           created_at: string
           currency: string
-          google_access_token: string | null
-          google_refresh_token: string | null
+          google_auth_status: string | null
           google_token_expires_at: string | null
+          google_token_vault_id: string | null
           id: string
           language: string
           last_synced: string | null
@@ -326,9 +326,9 @@ export type Database = {
           auto_sync?: boolean
           created_at?: string
           currency?: string
-          google_access_token?: string | null
-          google_refresh_token?: string | null
+          google_auth_status?: string | null
           google_token_expires_at?: string | null
+          google_token_vault_id?: string | null
           id?: string
           language?: string
           last_synced?: string | null
@@ -346,9 +346,9 @@ export type Database = {
           auto_sync?: boolean
           created_at?: string
           currency?: string
-          google_access_token?: string | null
-          google_refresh_token?: string | null
+          google_auth_status?: string | null
           google_token_expires_at?: string | null
+          google_token_vault_id?: string | null
           id?: string
           language?: string
           last_synced?: string | null

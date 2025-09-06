@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useSettings } from "@/hooks/useSettings";
 import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
+import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { 
   Settings as SettingsIcon, 
@@ -24,7 +25,9 @@ import {
   Sun,
   ExternalLink,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 
 export default function Settings() {
@@ -102,10 +105,39 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Connect your Google account to access sheets</p>
               </div>
               <div className="flex items-center gap-2">
-                {settings?.google_access_token ? (
+                {settings?.google_auth_status === 'connected' ? (
                   <>
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <span className="text-sm text-green-600">Connected</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.functions.invoke('secure-google-tokens', {
+                            body: { action: 'revoke' }
+                          });
+                          if (error) throw error;
+                          window.location.reload(); // Simple refresh to update UI
+                        } catch (error) {
+                          console.error('Failed to disconnect:', error);
+                        }
+                      }}
+                      className="text-red-600 border-red-600 hover:bg-red-50 ml-2"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Disconnect
+                    </Button>
+                  </>
+                ) : settings?.google_auth_status === 'expired' ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm text-yellow-600">Expired - Please reconnect</span>
+                  </>
+                ) : settings?.google_auth_status === 'error' ? (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-600">Connection Error</span>
                   </>
                 ) : (
                   <>
@@ -116,7 +148,7 @@ export default function Settings() {
               </div>
             </div>
             
-            {!settings?.google_access_token && (
+            {settings?.google_auth_status !== 'connected' && (
               <Button
                 onClick={() => authenticate.mutate()}
                 disabled={authenticate.isPending || isAuthenticating}
@@ -170,7 +202,7 @@ export default function Settings() {
               </Button>
               <Button 
                 onClick={() => syncData.mutate(settings?.sheet_url)}
-                disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+                disabled={settings?.google_auth_status !== 'connected' || !settings?.sheet_url || isSyncing}
                 className="flex items-center gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -295,7 +327,7 @@ export default function Settings() {
                 variant="outline" 
                 className="flex items-center gap-2"
                 onClick={() => syncData.mutate(settings?.sheet_url)}
-                disabled={!settings?.google_access_token || !settings?.sheet_url || isSyncing}
+                disabled={settings?.google_auth_status !== 'connected' || !settings?.sheet_url || isSyncing}
               >
                 <Upload className="h-4 w-4" />
                 {isSyncing ? 'Importing...' : 'Import from Sheets'}

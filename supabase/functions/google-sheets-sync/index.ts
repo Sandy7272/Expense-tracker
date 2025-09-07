@@ -288,7 +288,7 @@ serve(async (req) => {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
             expires_at: expiresAt.toISOString()
-          }
+          },
           user_id: state
         }
       })

@@ -15,6 +15,8 @@ import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
 import { useSettings } from "@/hooks/useSettings";
 import { CsvImporter } from "@/components/CsvImporter";
+import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
+import { useDateRangeFilter } from "@/hooks/useDateRangeFilter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +30,7 @@ import {
 
 export default function Transactions() {
   const { transactions, isLoading, deleteTransaction, createTransaction, bulkDeleteTransactions } = useTransactions();
+  const { filteredTransactions: dateFilteredTransactions, formatDateRange, dateRange } = useDateRangeFilter();
   const { syncData, isSyncing } = useGoogleSheetsSync();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,7 +79,7 @@ export default function Transactions() {
     setBulkDeleteOpen(false);
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
+  const filteredTransactions = dateFilteredTransactions.filter((transaction) => {
     const desc = (transaction.description || "").toLowerCase();
     const cat = (transaction.category || "").toLowerCase();
     const type = (transaction.type || "").toLowerCase();
@@ -140,7 +143,10 @@ export default function Transactions() {
             <CardTitle className="text-lg">Filters & Search</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="md:col-span-2">
+                <DateRangeSelector onDateRangeChange={() => {}} />
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -171,7 +177,9 @@ export default function Transactions() {
                   <SelectItem value="expense">Expense</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="btn-professional">
+            </div>
+            <div className="mt-4">
+              <Button variant="outline" className="btn-professional w-full md:w-auto">
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -186,7 +194,7 @@ export default function Transactions() {
               <div>
                 <CardTitle>Transaction History</CardTitle>
                 <CardDescription>
-                  {filteredTransactions.length} of {transactions.length} transactions
+                  {filteredTransactions.length} of {dateFilteredTransactions.length} transactions ({formatDateRange(dateRange)})
                   {selectedTransactions.size > 0 && ` • ${selectedTransactions.size} selected`}
                 </CardDescription>
               </div>

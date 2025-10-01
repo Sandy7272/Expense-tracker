@@ -11,32 +11,79 @@ import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDateRangeFilter, DateRange } from "@/hooks/useDateRangeFilter";
+import { useInvestmentData } from "@/hooks/useInvestmentData";
+import { useLendingTransactions } from "@/hooks/useLendingTransactions";
 import { format } from "date-fns";
 
 export default function Index() {
   const [showAddModal, setShowAddModal] = useState(false);
   const { transactions, isLoading } = useTransactions();
-  const { filteredTransactions } = useDateRangeFilter();
+  const { filteredTransactions, dateRange } = useDateRangeFilter();
+  const { investmentData, isLoading: investmentLoading } = useInvestmentData(dateRange);
+  const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions(dateRange);
   
   const handleDateRangeChange = (range: DateRange) => {
     // Date range change is handled by the useDateRangeFilter hook
   };
+
+  // Process lending transactions for overview
+  const lendBorrowData = useMemo(() => {
+    const lent = lendingTransactions.filter(t => t.type === 'lent').reduce((sum, t) => sum + Number(t.amount), 0);
+    const borrowed = lendingTransactions.filter(t => t.type === 'borrowed').reduce((sum, t) => sum + Number(t.amount), 0);
+    const repaidByThem = lendingTransactions.filter(t => t.type === 'repaid_by_them').reduce((sum, t) => sum + Number(t.amount), 0);
+    const repaidByMe = lendingTransactions.filter(t => t.type === 'repaid_by_me').reduce((sum, t) => sum + Number(t.amount), 0);
+    
+    return {
+      usneDile: lent - repaidByThem, // Outstanding amount we lent
+      usnePrtAle: repaidByThem, // Amount they repaid us
+      usneGhetle: borrowed - repaidByMe, // Outstanding amount we borrowed
+      usnePrtDile: repaidByMe // Amount we repaid them
+    };
+  }, [lendingTransactions]);
+
+  // Process person lending summary
+  const personLendingData = useMemo(() => {
+    const personMap = new Map<string, { name: string; lent: number; borrowed: number; repaidByThem: number; repaidByMe: number }>();
+    
+    lendingTransactions.forEach(t => {
+      if (!personMap.has(t.person_name)) {
+        personMap.set(t.person_name, { name: t.person_name, lent: 0, borrowed: 0, repaidByThem: 0, repaidByMe: 0 });
+      }
+      const person = personMap.get(t.person_name)!;
+      
+      if (t.type === 'lent') person.lent += Number(t.amount);
+      else if (t.type === 'borrowed') person.borrowed += Number(t.amount);
+      else if (t.type === 'repaid_by_them') person.repaidByThem += Number(t.amount);
+      else if (t.type === 'repaid_by_me') person.repaidByMe += Number(t.amount);
+    });
+    
+    return Array.from(personMap.values()).map(person => ({
+      name: person.name,
+      amount: person.lent + person.borrowed,
+      totalRemaining: (person.lent - person.repaidByThem) - (person.borrowed - person.repaidByMe)
+    })).filter(p => p.amount > 0); // Only show people with transactions
+  }, [lendingTransactions]);
 
   // Calculate financial data from filtered transactions
   const financialData = useMemo(() => {
     const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
     
+    // Calculate EMI from transactions with "EMI" in category
+    const emi = filteredTransactions
+      .filter(t => t.type === 'expense' && t.category?.toLowerCase().includes('emi'))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    
     return {
       totalIncome: income,
       totalSpend: expenses,
-      totalInvestment: 45000,
-      emi: 15000,
-      usneDile: 25000,
-      usneGhetle: 8000,
-      savingInBank: income - expenses
+      totalInvestment: investmentData?.totalInvestment || 0,
+      emi,
+      usneDile: lendBorrowData.usneDile,
+      usneGhetle: lendBorrowData.usneGhetle,
+      savingInBank: income - expenses - (investmentData?.totalInvestment || 0)
     };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, investmentData, lendBorrowData]);
 
   // Transform filtered transactions to category data for pie chart
   const categoryData = useMemo(() => {
@@ -72,29 +119,10 @@ export default function Index() {
     return Object.values(monthlyTotals).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   }, [filteredTransactions]);
 
-  // Mock data for other components
-  const investmentData = {
-    mutualFunds: 180000,
-    stocks: 95000,
-    insurancePolicy: 65000,
-    bhishi: 35000,
-    totalInvestment: 375000
-  };
-
-  const lendBorrowData = {
-    usneDile: 45000,
-    usnePrtAle: 12000,
-    usneGhetle: 23000,
-    usnePrtDile: 8000
-  };
-
-  const personLendingData = [
-    { name: "Alex Johnson", amount: 1500, totalRemaining: 500 },
-    { name: "Sarah Chen", amount: 800, totalRemaining: -300 },
-  ];
+  const isAnyLoading = isLoading || investmentLoading || lendingLoading;
 
   return (
-    <DashboardLayout onRefresh={() => {}} isLoading={isLoading}>
+    <DashboardLayout onRefresh={() => {}} isLoading={isAnyLoading}>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -109,11 +137,11 @@ export default function Index() {
         <FinancialSummaryCards {...financialData} />
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <InvestmentBreakdown data={investmentData} />
+          <InvestmentBreakdown data={investmentData || { mutualFunds: 0, stocks: 0, insurancePolicy: 0, bhishi: 0, totalInvestment: 0 }} />
           <LendBorrowOverview data={lendBorrowData} />
         </div>
 
-        <PersonLendingTable data={personLendingData} />
+        {personLendingData.length > 0 && <PersonLendingTable data={personLendingData} />}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <CategoryPieChart data={categoryData} />

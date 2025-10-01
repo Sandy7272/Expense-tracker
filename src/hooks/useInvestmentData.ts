@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { DateRange } from './useDateRangeFilter';
 
 export interface InvestmentTransaction {
   id: string;
@@ -36,7 +37,7 @@ const INVESTMENT_CATEGORIES = {
   'Bhishi': 'bhishi'
 } as const;
 
-export function useInvestmentData() {
+export function useInvestmentData(dateRange?: DateRange) {
   const { user } = useAuth();
 
   const {
@@ -44,19 +45,27 @@ export function useInvestmentData() {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['investment-transactions', user?.id],
+    queryKey: ['investment-transactions', user?.id, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       if (!user) return [];
       
       const investmentCategories = Object.keys(INVESTMENT_CATEGORIES);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*')
         .in('category', investmentCategories)
         .eq('type', 'expense') // Only count money going out (investments)
-        .eq('status', 'completed')
-        .order('date', { ascending: false });
+        .eq('status', 'completed');
+
+      // Apply date range filter if provided
+      if (dateRange) {
+        query = query
+          .gte('date', dateRange.from.toISOString().split('T')[0])
+          .lte('date', dateRange.to.toISOString().split('T')[0]);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
       return data as InvestmentTransaction[];

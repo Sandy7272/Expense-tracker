@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { DateRangeSelector } from "./DateRangeSelector";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -137,12 +138,12 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
       <div className="lg:pl-64">
         {/* Top header */}
         <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50">
-          <div className="flex items-center justify-between h-16 px-6">
-            <div className="flex items-center">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:px-6">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden mr-3"
+                className="lg:hidden"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="h-5 w-5" />
@@ -157,16 +158,21 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
               </div>
             </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isLoading}
-              className="hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              Refresh Data
-            </Button>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <DateRangeSelector onDateRangeChange={() => {}} />
+              {onRefresh && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  disabled={isLoading}
+                  className="hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
+                >
+                  <RefreshCw className={cn("h-4 w-4 sm:mr-2", isLoading && "animate-spin")} />
+                  <span className="hidden sm:inline">Refresh Data</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

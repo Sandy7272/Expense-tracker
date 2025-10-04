@@ -3,7 +3,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
 import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
 import { LendingTransactionModal } from "@/components/dashboard/LendingTransactionModal";
-import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +14,7 @@ import { format } from "date-fns";
 
 export default function Lending() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { dateRange } = useDateRangeFilter();
+  const { dateRange, formatDateRange } = useDateRangeFilter();
   const { transactions, isLoading } = useLendingTransactions(dateRange);
 
   // Process lending transactions for overview
@@ -144,15 +143,12 @@ export default function Lending() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground">Lending & Borrowing</h1>
-            <p className="text-muted-foreground">Track money lent to and borrowed from friends & family</p>
+            <p className="text-muted-foreground">Track money lent to and borrowed from friends & family ({formatDateRange(dateRange)})</p>
           </div>
-          <div className="flex gap-2">
-            <DateRangeSelector onDateRangeChange={() => {}} />
-            <Button className="cyber-button" onClick={() => setIsModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Transaction
-            </Button>
-          </div>
+          <Button className="cyber-button" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Transaction
+          </Button>
         </div>
 
         {/* Overview Cards */}

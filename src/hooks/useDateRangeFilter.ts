@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { useTransactions } from './useTransactions';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface DateRange {
   from: Date;
@@ -20,11 +21,16 @@ let globalDateRange: DateRange = {
 export function useDateRangeFilter() {
   const { transactions } = useTransactions();
   const [dateRange, setDateRangeState] = useState<DateRange>(globalDateRange);
+  const queryClient = useQueryClient();
 
   const setDateRange = useCallback((range: DateRange) => {
     globalDateRange = range;
     setDateRangeState(range);
-  }, []);
+    // Force all queries to refetch when date range changes
+    queryClient.invalidateQueries({ queryKey: ['investment-data'] });
+    queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  }, [queryClient]);
 
   const presets: DateRangePreset[] = useMemo(() => {
     const now = new Date();

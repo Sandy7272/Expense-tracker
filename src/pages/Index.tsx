@@ -124,11 +124,14 @@ export default function Index() {
   return (
     <DashboardLayout onRefresh={() => {}} isLoading={isAnyLoading}>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
-            Financial Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
+              Financial Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
+          </div>
+          <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
         </div>
 
         <FinancialSummaryCards {...financialData} />

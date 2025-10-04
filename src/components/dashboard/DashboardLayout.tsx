@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { DateRangeSelector } from "./DateRangeSelector";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -159,7 +158,6 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
             </div>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <DateRangeSelector onDateRangeChange={() => {}} />
               {onRefresh && (
                 <Button
                   variant="outline"

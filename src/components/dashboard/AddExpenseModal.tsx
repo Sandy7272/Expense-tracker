@@ -300,14 +300,14 @@ const showLoanSelector = selectedType === "expense" && (
                     render={({ field }) => (
                       <FormItem className="space-y-2">
                         <FormLabel>Link to Loan (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(value) => field.onChange(value === "none" ? "" : value)} value={field.value || "none"}>
                           <FormControl>
                             <SelectTrigger className="input-professional">
                               <SelectValue placeholder="Select a loan" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No loan</SelectItem>
+                            <SelectItem value="none">No loan</SelectItem>
                             {loans.filter(l => l.status === 'active').map((loan) => (
                               <SelectItem key={loan.id} value={loan.id}>
                                 {loan.loan_name} - EMI: ₹{loan.monthly_emi}

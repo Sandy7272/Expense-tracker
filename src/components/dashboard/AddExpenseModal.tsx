@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { useTransactions, CreateTransactionData } from "@/hooks/useTransactions";
 import type { Transaction } from "@/hooks/useTransactions";
 import { CategorySelector } from "./CategorySelector";
+import { useLoans } from "@/hooks/useLoans";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,12 +42,14 @@ const formSchema = z.object({
     .refine((v) => parseFloat(v) > 0, "Amount must be greater than 0"),
   description: z.string().optional(),
   person: z.string().optional(),
+  loan_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseModalProps) {
   const { createTransaction, updateTransaction } = useTransactions();
+  const { loans } = useLoans();
   const [dateOpen, setDateOpen] = useState(false);
 
   const form = useForm<FormValues>({
@@ -58,6 +62,7 @@ export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseM
       amount: "",
       description: "",
       person: "",
+      loan_id: "",
     },
   });
 
@@ -71,9 +76,10 @@ useEffect(() => {
         amount: String(transaction.amount ?? ""),
         description: transaction.description || "",
         person: transaction.person || "",
+        loan_id: transaction.loan_id || "",
       });
     } else {
-      form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "" });
+      form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
     }
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,6 +93,7 @@ const onSubmit = (values: FormValues) => {
     amount: parseFloat(values.amount),
     type: values.type,
     person: values.person || "",
+    loan_id: values.loan_id || undefined,
   };
 
   if (transaction) {
@@ -101,7 +108,7 @@ const onSubmit = (values: FormValues) => {
   } else {
     createTransaction.mutate(data, {
       onSuccess: () => {
-        form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "" });
+        form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
         onOpenChange(false);
       },
     });
@@ -110,9 +117,27 @@ const onSubmit = (values: FormValues) => {
 
 const selectedType = form.watch("type");
 const selectedDate = form.watch("date");
+const selectedCategory = form.watch("category");
+const selectedLoanId = form.watch("loan_id");
 const isSubmitting = transaction ? updateTransaction.isPending : createTransaction.isPending;
 const spinnerText = transaction ? "Saving..." : "Adding...";
 const submitLabel = transaction ? "Save changes" : `Add ${selectedType === "income" ? "Income" : "Expense"}`;
+
+// Auto-fill EMI amount when loan is selected
+useEffect(() => {
+  if (selectedLoanId && !transaction) {
+    const selectedLoan = loans.find(l => l.id === selectedLoanId);
+    if (selectedLoan) {
+      form.setValue("amount", String(selectedLoan.monthly_emi));
+    }
+  }
+}, [selectedLoanId, loans, form, transaction]);
+
+// Show EMI-related categories
+const showLoanSelector = selectedType === "expense" && (
+  selectedCategory.toLowerCase().includes("emi") || 
+  selectedCategory.toLowerCase().includes("loan")
+);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,6 +291,37 @@ const submitLabel = transaction ? "Save changes" : `Add ${selectedType === "inco
                     </FormItem>
                   )}
                 />
+
+                {/* Loan Selector - shown when EMI/Loan category selected */}
+                {showLoanSelector && (
+                  <FormField
+                    control={form.control}
+                    name="loan_id"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel>Link to Loan (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="input-professional">
+                              <SelectValue placeholder="Select a loan" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">No loan</SelectItem>
+                            {loans.filter(l => l.status === 'active').map((loan) => (
+                              <SelectItem key={loan.id} value={loan.id}>
+                                {loan.loan_name} - EMI: ₹{loan.monthly_emi}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Link this payment to track EMI progress automatically
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               {/* Right Column - Category Selection */}

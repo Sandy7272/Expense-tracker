@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/currency";
 import { Edit, Trash2, Calendar, TrendingUp, DollarSign, Clock } from "lucide-react";
 import { useLoans, type Loan } from "@/hooks/useLoans";
 import { useLoanPayments } from "@/hooks/useLoanPayments";
+import { useEMITracking } from "@/hooks/useEMITracking";
 import { AddLoanModal } from "@/components/loans/AddLoanModal";
 import { LoanDetailsModal } from "@/components/loans/LoanDetailsModal";
 import {
@@ -27,6 +28,7 @@ interface LoanCardProps {
 export function LoanCard({ loan }: LoanCardProps) {
   const { deleteLoan } = useLoans();
   const { loanStats } = useLoanPayments(loan.id);
+  const { emiStats } = useEMITracking(loan.id);
   const [editOpen, setEditOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -36,10 +38,14 @@ export function LoanCard({ loan }: LoanCardProps) {
   const monthsPassed = Math.max(0, (currentDate.getFullYear() - startDate.getFullYear()) * 12 + 
                                     (currentDate.getMonth() - startDate.getMonth()));
   
-  const progressPercentage = Math.min((monthsPassed / loan.tenure_months) * 100, 100);
-  const remainingMonths = Math.max(0, loan.tenure_months - monthsPassed);
-  const totalInterest = (loan.monthly_emi * loan.tenure_months) - loan.principal_amount;
-  const remainingAmount = loan.principal_amount - loanStats.totalPaid;
+  // Use EMI count from transactions for progress
+  const emisPaid = emiStats.emiCount;
+  const emisPending = Math.max(0, loan.tenure_months - emisPaid);
+  const progressPercentage = Math.min((emisPaid / loan.tenure_months) * 100, 100);
+  
+  // Calculate remaining amount using transaction-based payments
+  const totalPaidAmount = emiStats.totalPaidFromTransactions || loanStats.totalPaid;
+  const remainingAmount = loan.principal_amount - totalPaidAmount;
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -118,28 +124,28 @@ export function LoanCard({ loan }: LoanCardProps) {
               <div className="flex items-center justify-center mb-1">
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="text-sm font-medium">{remainingMonths}</div>
-              <div className="text-xs text-muted-foreground">Months Left</div>
+              <div className="text-sm font-medium">{emisPaid} of {loan.tenure_months}</div>
+              <div className="text-xs text-muted-foreground">EMIs Paid</div>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{Math.round(progressPercentage)}% completed</span>
+              <span className="text-muted-foreground">EMI Progress</span>
+              <span className="font-medium">{emisPaid} done, {emisPending} pending</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Paid: {formatCurrency(loanStats.totalPaid)}</span>
+              <span>Paid: {formatCurrency(totalPaidAmount)}</span>
               <span>Remaining: {formatCurrency(Math.max(0, remainingAmount))}</span>
             </div>
           </div>
 
-          {loanStats.lastPaymentDate && (
+          {(emiStats.lastEMIDate || loanStats.lastPaymentDate) && (
             <div className="mt-4 pt-4 border-t">
               <div className="text-xs text-muted-foreground">
-                Last payment: {new Date(loanStats.lastPaymentDate).toLocaleDateString()} 
-                • {loanStats.paymentCount} payment{loanStats.paymentCount !== 1 ? 's' : ''} made
+                Last EMI: {new Date(emiStats.lastEMIDate || loanStats.lastPaymentDate).toLocaleDateString()} 
+                • {emisPaid} EMI payment{emisPaid !== 1 ? 's' : ''} tracked
               </div>
             </div>
           )}

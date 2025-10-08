@@ -17,6 +17,7 @@ export interface Transaction {
   date: string;
   created_at: string;
   updated_at: string;
+  loan_id?: string;
 }
 
 export interface CreateTransactionData {
@@ -26,6 +27,7 @@ export interface CreateTransactionData {
   description?: string;
   person?: string;
   date: string;
+  loan_id?: string;
 }
 
 export function useTransactions() {

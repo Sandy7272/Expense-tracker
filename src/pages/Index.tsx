@@ -9,6 +9,7 @@ import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
+import { EMITrackingCard } from "@/components/dashboard/EMITrackingCard";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDateRangeFilter, DateRange } from "@/hooks/useDateRangeFilter";
 import { useInvestmentData } from "@/hooks/useInvestmentData";
@@ -135,6 +136,8 @@ export default function Index() {
         </div>
 
         <FinancialSummaryCards {...financialData} />
+        
+        <EMITrackingCard />
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <InvestmentBreakdown data={investmentData || { mutualFunds: 0, stocks: 0, insurancePolicy: 0, bhishi: 0, totalInvestment: 0 }} />

@@ -36,6 +36,9 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const [personFilter, setPersonFilter] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -83,16 +86,29 @@ export default function Transactions() {
     const desc = (transaction.description || "").toLowerCase();
     const cat = (transaction.category || "").toLowerCase();
     const type = (transaction.type || "").toLowerCase();
+    const person = (transaction.person || "").toLowerCase();
+    
     const matchesSearch =
       desc.includes(searchTerm.toLowerCase()) ||
-      cat.includes(searchTerm.toLowerCase());
+      cat.includes(searchTerm.toLowerCase()) ||
+      person.includes(searchTerm.toLowerCase());
+    
     const matchesCategory =
       categoryFilter === "all" || transaction.category === categoryFilter;
+    
     const matchesType = typeFilter === "all" || type === typeFilter;
-    return matchesSearch && matchesCategory && matchesType;
+    
+    const matchesPerson = !personFilter || person.includes(personFilter.toLowerCase());
+    
+    const amount = Math.abs(Number(transaction.amount));
+    const matchesMinAmount = !minAmount || amount >= Number(minAmount);
+    const matchesMaxAmount = !maxAmount || amount <= Number(maxAmount);
+    
+    return matchesSearch && matchesCategory && matchesType && matchesPerson && matchesMinAmount && matchesMaxAmount;
   });
 
   const categories = [...new Set(transactions.map(t => t.category))];
+  const people = [...new Set(transactions.map(t => t.person).filter(Boolean))];
 
   const getTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
@@ -140,46 +156,114 @@ export default function Transactions() {
         {/* Filters */}
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+            <CardTitle className="text-lg">Advanced Filters & Search</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search transactions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search description, category, person..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="expense">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="mt-4">
-              <Button variant="outline" className="btn-professional w-full md:w-auto">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  placeholder="Min amount"
+                  type="number"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                />
+                <Input
+                  placeholder="Max amount"
+                  type="number"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                />
+                <Select value={personFilter} onValueChange={setPersonFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All People" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All People</SelectItem>
+                    {people.map(person => (
+                      <SelectItem key={person} value={person!}>{person}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setCategoryFilter("all");
+                    setTypeFilter("all");
+                    setMinAmount("");
+                    setMaxAmount("");
+                    setPersonFilter("");
+                  }}
+                >
+                  Clear Filters
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="btn-professional"
+                  onClick={() => {
+                    const csv = [
+                      ['Date', 'Type', 'Category', 'Description', 'Amount', 'Person', 'Status'],
+                      ...filteredTransactions.map(tx => [
+                        tx.date,
+                        tx.type,
+                        tx.category,
+                        tx.description || '',
+                        tx.amount,
+                        tx.person || '',
+                        tx.status
+                      ])
+                    ].map(row => row.join(',')).join('\n');
+                    
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV ({filteredTransactions.length})
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

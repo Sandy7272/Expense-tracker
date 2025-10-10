@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,15 +129,33 @@ useEffect(() => {
     const selectedLoan = loans.find(l => l.id === selectedLoanId);
     if (selectedLoan) {
       form.setValue("amount", String(selectedLoan.monthly_emi));
+      if (!selectedCategory.toLowerCase().includes("emi")) {
+        form.setValue("category", "EMI Payment");
+      }
     }
   }
-}, [selectedLoanId, loans, form, transaction]);
+}, [selectedLoanId, loans, form, transaction, selectedCategory]);
 
-// Show EMI-related categories
+// Smart EMI detection - show loan selector if it looks like an EMI payment
 const showLoanSelector = selectedType === "expense" && (
   selectedCategory.toLowerCase().includes("emi") || 
-  selectedCategory.toLowerCase().includes("loan")
+  selectedCategory.toLowerCase().includes("loan") ||
+  selectedCategory.toLowerCase().includes("mortgage") ||
+  selectedCategory.toLowerCase().includes("payment")
 );
+
+// Smart suggestion - detect if amount matches any active loan EMI
+const suggestedLoan = useMemo(() => {
+  if (transaction || !form.watch("amount") || selectedType !== "expense") return null;
+  
+  const amount = parseFloat(form.watch("amount"));
+  if (isNaN(amount)) return null;
+  
+  return loans.find(loan => 
+    loan.status === 'active' && 
+    Math.abs(Number(loan.monthly_emi) - amount) < 10 // Within ₹10 tolerance
+  );
+}, [loans, form.watch("amount"), selectedType, transaction]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -292,6 +310,35 @@ const showLoanSelector = selectedType === "expense" && (
                   )}
                 />
 
+                {/* Smart EMI Detection Alert */}
+                {suggestedLoan && !selectedLoanId && (
+                  <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">💡</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-primary mb-1">EMI Detected!</h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          This amount matches your <strong>{suggestedLoan.loan_name}</strong> EMI (₹{suggestedLoan.monthly_emi}).
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="border-primary text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            form.setValue("loan_id", suggestedLoan.id);
+                            if (!selectedCategory.toLowerCase().includes("emi")) {
+                              form.setValue("category", "EMI Payment");
+                            }
+                          }}
+                        >
+                          Link to {suggestedLoan.loan_name}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Loan Selector - shown when EMI/Loan category selected */}
                 {showLoanSelector && (
                   <FormField
@@ -299,7 +346,7 @@ const showLoanSelector = selectedType === "expense" && (
                     name="loan_id"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel>Link to Loan (Optional)</FormLabel>
+                        <FormLabel>Link to Loan</FormLabel>
                         <Select onValueChange={(value) => field.onChange(value === "none" ? "" : value)} value={field.value || "none"}>
                           <FormControl>
                             <SelectTrigger className="input-professional">
@@ -316,7 +363,7 @@ const showLoanSelector = selectedType === "expense" && (
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Link this payment to track EMI progress automatically
+                          Track EMI payments and calculate interest automatically
                         </FormDescription>
                       </FormItem>
                     )}

@@ -38,7 +38,7 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
-  const [personFilter, setPersonFilter] = useState("");
+  const [personFilter, setPersonFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -98,7 +98,7 @@ export default function Transactions() {
     
     const matchesType = typeFilter === "all" || type === typeFilter;
     
-    const matchesPerson = !personFilter || person.includes(personFilter.toLowerCase());
+    const matchesPerson = personFilter === "all" || person.includes(personFilter.toLowerCase());
     
     const amount = Math.abs(Number(transaction.amount));
     const matchesMinAmount = !minAmount || amount >= Number(minAmount);
@@ -211,7 +211,7 @@ export default function Transactions() {
                     <SelectValue placeholder="All People" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All People</SelectItem>
+                    <SelectItem value="all">All People</SelectItem>
                     {people.map(person => (
                       <SelectItem key={person} value={person!}>{person}</SelectItem>
                     ))}
@@ -229,7 +229,7 @@ export default function Transactions() {
                     setTypeFilter("all");
                     setMinAmount("");
                     setMaxAmount("");
-                    setPersonFilter("");
+                    setPersonFilter("all");
                   }}
                 >
                   Clear Filters

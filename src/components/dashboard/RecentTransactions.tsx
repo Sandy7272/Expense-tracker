@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Plus, Calendar, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Transaction {
   id: string;
@@ -20,13 +21,7 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions, onAddNew }: RecentTransactionsProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
+  const { formatAmount } = useCurrency();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -137,7 +132,7 @@ export function RecentTransactions({ transactions, onAddNew }: RecentTransaction
                     "font-semibold text-lg",
                     transaction.type === 'income' ? "text-income" : "text-expense"
                   )}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                    {transaction.type === 'income' ? '+' : '-'}{formatAmount(Math.abs(transaction.amount))}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {transaction.type === 'income' ? 'Income' : 'Expense'}

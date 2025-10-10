@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, PiggyBank, CreditCard, ArrowUpRight, ArrowDownLeft, Wallet } from "lucide-react";
-import { formatINR } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
 interface FinancialSummaryCardsProps {
@@ -22,10 +22,12 @@ export function FinancialSummaryCards({
   usneGhetle, 
   savingInBank 
 }: FinancialSummaryCardsProps) {
+  const { formatAmount } = useCurrency();
+  
   const cards = [
     {
       title: "Total Income",
-      value: formatINR(totalIncome),
+      value: formatAmount(totalIncome),
       icon: TrendingUp,
       gradient: "from-income/20 to-success/20",
       iconColor: "text-income",
@@ -34,7 +36,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "Total Spend",
-      value: formatINR(totalSpend),
+      value: formatAmount(totalSpend),
       icon: TrendingDown,
       gradient: "from-expense/20 to-destructive/20",
       iconColor: "text-expense",
@@ -43,7 +45,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "Total Investment",
-      value: formatINR(totalInvestment),
+      value: formatAmount(totalInvestment),
       icon: PiggyBank,
       gradient: "from-investment/20 to-primary/20",
       iconColor: "text-investment",
@@ -52,7 +54,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "EMI",
-      value: formatINR(emi),
+      value: formatAmount(emi),
       icon: CreditCard,
       gradient: "from-warning/20 to-accent/20",
       iconColor: "text-warning",
@@ -61,7 +63,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "Usne Dile",
-      value: formatINR(usneDile),
+      value: formatAmount(usneDile),
       icon: ArrowUpRight,
       gradient: "from-lending/20 to-primary/20",
       iconColor: "text-lending",
@@ -70,7 +72,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "Usne Ghetle",
-      value: formatINR(usneGhetle),
+      value: formatAmount(usneGhetle),
       icon: ArrowDownLeft,
       gradient: "from-success/20 to-income/20",
       iconColor: "text-success",
@@ -79,7 +81,7 @@ export function FinancialSummaryCards({
     },
     {
       title: "Saving in Bank",
-      value: formatINR(savingInBank),
+      value: formatAmount(savingInBank),
       icon: Wallet,
       gradient: savingInBank >= 0 ? "from-success/20 to-income/20" : "from-expense/20 to-destructive/20",
       iconColor: savingInBank >= 0 ? "text-success" : "text-expense",

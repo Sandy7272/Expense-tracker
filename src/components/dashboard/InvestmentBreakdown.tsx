@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { formatINR, formatINRCompact } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, Shield, Building, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ interface InvestmentBreakdownProps {
 }
 
 export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
+  const { formatAmount, formatAmountCompact } = useCurrency();
   const investments = [
     {
       name: "Mutual Funds",
@@ -72,7 +73,7 @@ export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
               Investment Breakdown
             </h3>
             <p className="text-sm text-muted-foreground">
-              Total: {formatINR(data.totalInvestment)}
+              Total: {formatAmount(data.totalInvestment)}
             </p>
           </div>
         </div>
@@ -111,10 +112,10 @@ export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
                     </div>
                     <div className="text-right">
                       <p className={cn("font-bold", investment.color)}>
-                        {formatINRCompact(investment.amount)}
+                        {formatAmountCompact(investment.amount)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatINR(investment.amount)}
+                        {formatAmount(investment.amount)}
                       </p>
                     </div>
                   </div>

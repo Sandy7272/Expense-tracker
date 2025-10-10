@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatINR } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { User, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,8 @@ interface PersonLendingTableProps {
 }
 
 export function PersonLendingTable({ data }: PersonLendingTableProps) {
+  const { formatAmount } = useCurrency();
+  
   return (
     <Card className="glass-card hover:glass-card glow-primary">
       <div className="p-6">
@@ -69,7 +71,7 @@ export function PersonLendingTable({ data }: PersonLendingTableProps) {
                     
                     <TableCell>
                       <span className="font-mono text-foreground">
-                        {formatINR(person.amount)}
+                        {formatAmount(person.amount)}
                       </span>
                     </TableCell>
                     
@@ -80,7 +82,7 @@ export function PersonLendingTable({ data }: PersonLendingTableProps) {
                         isNegative && "text-expense",
                         person.totalRemaining === 0 && "text-muted-foreground"
                       )}>
-                        {formatINR(person.totalRemaining)}
+                        {formatAmount(person.totalRemaining)}
                       </span>
                     </TableCell>
                     

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface BalanceCardProps {
   totalIncome: number;
@@ -8,18 +9,11 @@ interface BalanceCardProps {
   currency?: string;
 }
 
-export function BalanceCard({ totalIncome, totalExpenses, currency = "$" }: BalanceCardProps) {
+export function BalanceCard({ totalIncome, totalExpenses }: Omit<BalanceCardProps, 'currency'>) {
+  const { formatAmount } = useCurrency();
   const balance = totalIncome - totalExpenses;
   const isPositive = balance >= 0;
   const percentageChange = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-card via-card to-background border-border/50 shadow-card hover:shadow-hover transition-all duration-300">
@@ -65,7 +59,7 @@ export function BalanceCard({ totalIncome, totalExpenses, currency = "$" }: Bala
             "text-4xl lg:text-5xl font-bold font-heading transition-colors duration-300",
             isPositive ? "text-success" : "text-expense"
           )}>
-            {formatCurrency(balance)}
+            {formatAmount(balance)}
           </div>
           
           {percentageChange !== 0 && (
@@ -87,7 +81,7 @@ export function BalanceCard({ totalIncome, totalExpenses, currency = "$" }: Bala
               Total Income
             </p>
             <p className="text-lg font-semibold text-income">
-              {formatCurrency(totalIncome)}
+              {formatAmount(totalIncome)}
             </p>
           </div>
           <div>
@@ -95,7 +89,7 @@ export function BalanceCard({ totalIncome, totalExpenses, currency = "$" }: Bala
               Total Expenses
             </p>
             <p className="text-lg font-semibold text-expense">
-              {formatCurrency(totalExpenses)}
+              {formatAmount(totalExpenses)}
             </p>
           </div>
         </div>

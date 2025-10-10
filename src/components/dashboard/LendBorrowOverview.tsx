@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { formatINR } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
 interface LendBorrowData {
@@ -15,6 +15,8 @@ interface LendBorrowOverviewProps {
 }
 
 export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
+  const { formatAmount } = useCurrency();
+  
   const cards = [
     {
       title: "Usne Dile",
@@ -121,7 +123,7 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
                   "text-xl lg:text-2xl font-bold font-heading counter-animate transition-all duration-300 group-hover:scale-105",
                   card.color
                 )}>
-                  {formatINR(card.amount)}
+                  {formatAmount(card.amount)}
                 </p>
               </div>
             </div>

@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CreditCard, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import { formatINR } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 import { useAllEMIData } from "@/hooks/useAllEMIData";
 import { format } from "date-fns";
@@ -80,19 +80,19 @@ export function EMITrackingCard() {
             <div className="glass-card p-4 rounded-lg border border-white/10">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Monthly EMI</p>
               <p className="text-lg font-bold font-heading text-foreground">
-                {formatINR(emiSummary.totalMonthlyEMI)}
+                {formatAmount(emiSummary.totalMonthlyEMI)}
               </p>
             </div>
             <div className="glass-card p-4 rounded-lg border border-success/30 bg-success/5">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Paid</p>
               <p className="text-lg font-bold font-heading text-success">
-                {formatINR(emiSummary.totalPaidThisMonth)}
+                {formatAmount(emiSummary.totalPaidThisMonth)}
               </p>
             </div>
             <div className="glass-card p-4 rounded-lg border border-warning/30 bg-warning/5">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Pending</p>
               <p className="text-lg font-bold font-heading text-warning">
-                {formatINR(emiSummary.totalPendingThisMonth)}
+                {formatAmount(emiSummary.totalPendingThisMonth)}
               </p>
             </div>
           </div>
@@ -152,7 +152,7 @@ export function EMITrackingCard() {
                       "text-sm font-bold font-heading",
                       emi.isPaid ? "text-success" : "text-foreground"
                     )}>
-                      {formatINR(emi.amount)}
+                      {formatAmount(emi.amount)}
                     </p>
                   </div>
                 );

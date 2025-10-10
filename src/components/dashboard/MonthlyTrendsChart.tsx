@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface MonthlyData {
   month: string;
@@ -11,42 +12,45 @@ interface MonthlyTrendsChartProps {
   data: MonthlyData[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl p-4 shadow-soft">
-        <p className="font-medium text-foreground mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-muted-foreground">
-              {entry.dataKey === 'income' ? 'Income' : 'Expenses'}:
-            </span>
-            <span className="font-medium text-foreground">
-              ${entry.value.toLocaleString()}
-            </span>
-          </div>
-        ))}
-        <div className="border-t border-border/50 mt-2 pt-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Net:</span>
-            <span className={`font-medium ${
-              (payload[0].value - payload[1].value) >= 0 ? 'text-success' : 'text-expense'
-            }`}>
-              ${(payload[0].value - payload[1].value).toLocaleString()}
-            </span>
+export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
+  const { formatAmount, getCurrencySymbol } = useCurrency();
+  const currencySymbol = getCurrencySymbol();
+  
+  const CustomTooltipInternal = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl p-4 shadow-soft">
+          <p className="font-medium text-foreground mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center gap-2 text-sm">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-muted-foreground">
+                {entry.dataKey === 'income' ? 'Income' : 'Expenses'}:
+              </span>
+              <span className="font-medium text-foreground">
+                {formatAmount(entry.value)}
+              </span>
+            </div>
+          ))}
+          <div className="border-t border-border/50 mt-2 pt-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Net:</span>
+              <span className={`font-medium ${
+                (payload[0].value - payload[1].value) >= 0 ? 'text-success' : 'text-expense'
+              }`}>
+                {formatAmount(payload[0].value - payload[1].value)}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
+      );
+    }
+    return null;
+  };
+  
   return (
     <Card className="bg-gradient-to-br from-card via-card to-background border-border/50 shadow-card hover:shadow-hover transition-all duration-300">
       <div className="p-6">
@@ -82,9 +86,9 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value.toLocaleString()}`}
+                tickFormatter={(value) => `${currencySymbol}${value.toLocaleString()}`}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltipInternal />} />
               <Legend 
                 wrapperStyle={{ paddingTop: '20px' }}
                 iconType="circle"
@@ -113,7 +117,7 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
               Avg Income
             </p>
             <p className="text-lg font-semibold text-income">
-              ${data.length > 0 ? (data.reduce((sum, item) => sum + item.income, 0) / data.length).toLocaleString() : '0'}
+              {formatAmount(data.length > 0 ? (data.reduce((sum, item) => sum + item.income, 0) / data.length) : 0)}
             </p>
           </div>
           <div className="text-center">
@@ -121,7 +125,7 @@ export function MonthlyTrendsChart({ data }: MonthlyTrendsChartProps) {
               Avg Expenses
             </p>
             <p className="text-lg font-semibold text-expense">
-              ${data.length > 0 ? (data.reduce((sum, item) => sum + item.expenses, 0) / data.length).toLocaleString() : '0'}
+              {formatAmount(data.length > 0 ? (data.reduce((sum, item) => sum + item.expenses, 0) / data.length) : 0)}
             </p>
           </div>
           <div className="text-center">

@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, PieChart, CreditCard } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface SummaryCardsProps {
   totalIncome: number;
@@ -14,19 +15,12 @@ export function SummaryCards({
   transactionCount, 
   topCategory = "Food" 
 }: SummaryCardsProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { formatAmount } = useCurrency();
 
   const cards = [
     {
       title: "Total Income",
-      value: formatCurrency(totalIncome),
+      value: formatAmount(totalIncome),
       icon: TrendingUp,
       change: "+12.5%",
       changeType: "positive" as const,
@@ -36,7 +30,7 @@ export function SummaryCards({
     },
     {
       title: "Total Expenses",
-      value: formatCurrency(totalExpenses),
+      value: formatAmount(totalExpenses),
       icon: TrendingDown,
       change: "+8.2%",
       changeType: "negative" as const,

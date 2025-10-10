@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface CategoryData {
   category: string;
@@ -22,24 +23,26 @@ const PASTEL_COLORS = [
   "hsl(120, 30%, 75%)", // Sage green
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
-    const percentage = ((data.value / data.payload.total) * 100).toFixed(1);
-    
-    return (
-      <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl p-3 shadow-soft">
-        <p className="font-medium text-foreground">{data.payload.category}</p>
-        <p className="text-sm text-muted-foreground">
-          ${data.value.toLocaleString()} ({percentage}%)
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
+  const { formatAmount } = useCurrency();
+  
+  const CustomTooltipInternal = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      const percentage = ((data.value / data.payload.total) * 100).toFixed(1);
+      
+      return (
+        <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl p-3 shadow-soft">
+          <p className="font-medium text-foreground">{data.payload.category}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatAmount(data.value)} ({percentage}%)
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+  
   // Add total to each data point for percentage calculation
   const total = data.reduce((sum, item) => sum + item.amount, 0);
   const chartData = data.map((item, index) => ({
@@ -87,7 +90,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
                   />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltipInternal />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -105,7 +108,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
                   {item.category}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${item.amount.toLocaleString()}
+                  {formatAmount(item.amount)}
                 </p>
               </div>
             </div>

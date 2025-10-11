@@ -10,7 +10,8 @@ import { useState } from "react";
 import { AddExpenseModal } from "./AddExpenseModal";
 
 export function EMITrackingCard() {
-  const { formatAmount } = useCurrency();
+  const currencyContext = useCurrency();
+  const { formatAmount } = currencyContext;
   const { emiSummary, isLoading } = useAllEMIData();
   const [showAddModal, setShowAddModal] = useState(false);
 

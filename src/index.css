@@ -6,61 +6,61 @@
 
 @layer base {
   :root {
-    /* Vibrant Cyberpunk Theme */
-    --background: 240 20% 8%;
-    --foreground: 180 100% 95%;
-    --card: 240 20% 10%;
-    --card-foreground: 180 100% 95%;
-    --popover: 240 20% 10%;
-    --popover-foreground: 180 100% 95%;
-    --primary: 180 100% 50%;
-    --primary-foreground: 240 20% 8%;
-    --secondary: 280 100% 60%;
-    --secondary-foreground: 180 100% 95%;
-    --muted: 240 15% 20%;
-    --muted-foreground: 180 50% 70%;
-    --accent: 320 100% 55%;
-    --accent-foreground: 240 20% 8%;
-    --destructive: 0 100% 60%;
-    --destructive-foreground: 180 100% 95%;
-    --border: 180 50% 25%;
-    --input: 240 20% 15%;
-    --ring: 180 100% 50%;
+    /* Professional Black & White Theme */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 88%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 92%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 95%;
     --radius: 0.75rem;
 
-    /* Vibrant Cyberpunk Colors */
-    --income: 120 100% 50%;
-    --expense: 0 100% 65%;
-    --investment: 260 100% 65%;
-    --lending: 45 100% 55%;
-    --success: 120 100% 50%;
-    --warning: 45 100% 55%;
+    /* Professional Colors */
+    --income: 142 71% 45%;
+    --expense: 0 84% 60%;
+    --investment: 221 83% 53%;
+    --lending: 47 96% 53%;
+    --success: 142 71% 45%;
+    --warning: 45 93% 47%;
 
-    /* Cyberpunk Glass Effects */
-    --glass-border: 180 70% 40%;
-    --glass-bg: 240 20% 10%;
-    --glass-hover: 240 20% 15%;
+    /* Glass Effects */
+    --glass-border: 0 0% 25%;
+    --glass-bg: 0 0% 8%;
+    --glass-hover: 0 0% 12%;
 
-    /* Cyberpunk Glow Shadows */
-    --shadow-card: 0 4px 6px -1px rgb(0 255 255 / 0.2), 0 2px 4px -2px rgb(0 255 255 / 0.1);
-    --shadow-hover: 0 10px 20px -3px rgb(0 255 255 / 0.3), 0 4px 6px -4px rgb(0 255 255 / 0.2);
-    --shadow-soft: 0 1px 3px 0 rgb(0 255 255 / 0.1), 0 1px 2px -1px rgb(0 255 255 / 0.05);
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
 
-    /* Vibrant Cyberpunk Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(180 100% 50%), hsl(320 100% 55%));
-    --gradient-card: linear-gradient(135deg, hsl(240 20% 12%), hsl(240 15% 20%));
-    --gradient-income: linear-gradient(135deg, hsl(120 100% 50% / 0.8), hsl(120 100% 50% / 0.5));
-    --gradient-expense: linear-gradient(135deg, hsl(0 100% 65% / 0.8), hsl(0 100% 60% / 0.5));
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+    --gradient-income: linear-gradient(135deg, hsl(var(--income) / 0.8), hsl(var(--success) / 0.6));
+    --gradient-expense: linear-gradient(135deg, hsl(var(--expense) / 0.8), hsl(var(--destructive) / 0.6));
 
-    /* Cyberpunk Sidebar */
-    --sidebar-background: 240 20% 10%;
-    --sidebar-foreground: 180 100% 95%;
-    --sidebar-primary: 180 100% 50%;
-    --sidebar-primary-foreground: 240 20% 8%;
-    --sidebar-accent: 240 20% 15%;
-    --sidebar-accent-foreground: 180 100% 95%;
-    --sidebar-border: 180 50% 25%;
-    --sidebar-ring: 180 100% 50%;
+    /* Professional sidebar */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 88%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 95%;
   }
 
   .light {
@@ -159,12 +159,6 @@
 
 .add-transaction-btn:hover:before {
   left: 100%;
-}
-
-.cyber-button {
-  @apply bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold;
-  @apply shadow-lg hover:shadow-xl transition-all duration-300;
-  @apply hover:opacity-90 border border-primary/20;
 }
 
 .btn-professional {
@@ -354,18 +348,4 @@
   100% {
     background-position: 200% 0;
   }
-}
-
-@keyframes gradient {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.animate-gradient {
-  background-size: 200% auto;
-  animation: gradient 3s ease infinite;
 }

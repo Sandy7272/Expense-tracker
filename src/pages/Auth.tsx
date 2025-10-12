@@ -23,7 +23,7 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/dashboard');
+        navigate('/');
       }
     };
     checkUser();
@@ -34,7 +34,7 @@ export default function Auth() {
     setLoading(true);
     setError(null);
 
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -45,15 +45,11 @@ export default function Auth() {
     });
 
     if (error) {
-      if (error.message.includes('already registered')) {
-        setError('This email is already registered. Please sign in instead.');
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
     } else {
       toast({
-        title: "Welcome aboard! 🎉",
-        description: "Check your email for a confirmation link to complete your registration.",
+        title: "Check your email",
+        description: "We've sent you a confirmation link to complete your registration.",
       });
     }
     setLoading(false);
@@ -70,17 +66,9 @@ export default function Auth() {
     });
 
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Please try again.');
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
     } else {
-      toast({
-        title: "Welcome back! 👋",
-        description: "Successfully signed in to your account.",
-      });
-      navigate('/dashboard');
+      navigate('/');
     }
     setLoading(false);
   };
@@ -98,7 +86,7 @@ export default function Auth() {
             Expense Tracker
           </CardTitle>
           <CardDescription>
-            Your personal finances await - secure, private, and completely free
+            Sign in to your account or create a new one
           </CardDescription>
         </CardHeader>
         <CardContent>

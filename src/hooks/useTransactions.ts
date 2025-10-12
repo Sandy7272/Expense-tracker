@@ -3,17 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import type { InvestmentTransaction } from './useInvestmentData';
 
 export interface Transaction {
   id: string;
   user_id: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'lend' | 'borrow' | 'investment' | 'emi';
   amount: number;
   category: string;
   description?: string;
   person?: string;
   source?: string;
-  status: 'completed' | 'pending' | 'cancelled';
+  status: 'completed' | 'pending' | 'received';
   date: string;
   created_at: string;
   updated_at: string;
@@ -21,13 +22,14 @@ export interface Transaction {
 }
 
 export interface CreateTransactionData {
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'lend' | 'borrow' | 'investment' | 'emi';
   amount: number;
   category: string;
   description?: string;
   person?: string;
   date: string;
   loan_id?: string;
+  status?: 'completed' | 'pending' | 'received';
 }
 
 export function useTransactions() {
@@ -47,6 +49,7 @@ export function useTransactions() {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -64,7 +67,7 @@ export function useTransactions() {
         .insert([{
           ...data,
           user_id: user.id,
-          status: 'completed' as const
+          status: data.status || 'completed' // Use provided status or default to 'completed'
         }])
         .select()
         .single();
@@ -72,14 +75,19 @@ export function useTransactions() {
       if (error) throw error;
       return transaction;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    onSuccess: (newTransaction) => {
+      queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (oldData) => {
+        const newData = oldData ? [...oldData, newTransaction] : [newTransaction];
+        return newData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      });
+      queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] }); // Invalidate lending for dashboard updates
       toast({
         title: "Transaction added",
         description: "Your transaction has been saved successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -90,24 +98,30 @@ export function useTransactions() {
 
   const updateTransaction = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateTransactionData> }) => {
+      if (!user) throw new Error('User not authenticated');
       const { data: transaction, error } = await supabase
         .from('transactions')
         .update(data)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
       if (error) throw error;
       return transaction;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    onSuccess: (updatedTransaction) => {
+      queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (oldData) => {
+        return oldData ? oldData.map(tx => (tx.id === updatedTransaction.id ? { ...tx, ...updatedTransaction } : tx)) : [];
+      });
+      queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] }); // Invalidate lending for dashboard updates
       toast({
         title: "Transaction updated",
         description: "Your transaction has been updated successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -118,21 +132,29 @@ export function useTransactions() {
 
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error('User not authenticated');
       const { error } = await supabase
         .from('transactions')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    onSuccess: (_, id) => {
+      queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (oldData) => {
+        return oldData ? oldData.filter(tx => tx.id !== id) : [];
+      });
+      queryClient.setQueryData<InvestmentTransaction[]>(['investment-transactions', user?.id], (oldData) => {
+        return oldData ? oldData.filter(tx => tx.id !== id) : [];
+      });
+      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
       toast({
         title: "Transaction deleted",
         description: "Your transaction has been deleted successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -155,13 +177,19 @@ export function useTransactions() {
       if (error) throw error;
     },
     onSuccess: (_, transactionIds) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (oldData) => {
+        return oldData ? oldData.filter(tx => !transactionIds.includes(tx.id)) : [];
+      });
+      queryClient.setQueryData<InvestmentTransaction[]>(['investment-transactions', user?.id], (oldData) => {
+        return oldData ? oldData.filter(tx => !transactionIds.includes(tx.id)) : [];
+      });
+      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
       toast({
         title: "Transactions deleted",
         description: `${transactionIds.length} transaction${transactionIds.length !== 1 ? 's' : ''} deleted successfully.`,
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: `Failed to delete transactions: ${error.message}`,
@@ -185,7 +213,7 @@ export function useTransactions() {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions', user.id] });
         }
       )
       .subscribe();

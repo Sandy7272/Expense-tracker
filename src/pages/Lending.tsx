@@ -6,16 +6,31 @@ import { LendingTransactionModal } from "@/components/dashboard/LendingTransacti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
 import { useLendingTransactions } from "@/hooks/useLendingTransactions";
+import type { LendingTransaction } from "@/hooks/useLendingTransactions";
 import { useDateRangeFilter } from "@/hooks/useDateRangeFilter";
-import { Plus, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { Plus, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, AlertTriangle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Lending() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [txToDelete, setTxToDelete] = useState<LendingTransaction | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const { dateRange, formatDateRange } = useDateRangeFilter();
-  const { transactions, isLoading } = useLendingTransactions(dateRange);
+  const { transactions, isLoading, deleteTransaction } = useLendingTransactions(dateRange);
 
   // Process lending transactions for overview
   const lendBorrowData = useMemo(() => {
@@ -212,6 +227,18 @@ export default function Lending() {
                             </div>
                           </Badge>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent the card's onClick from firing
+                            setTxToDelete(transaction);
+                            setDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -280,6 +307,44 @@ export default function Lending() {
           onOpenChange={setIsModalOpen}
         />
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete lending transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the lending transaction
+              {txToDelete?.description ? ` "${txToDelete.description}"` : ""} with amount {formatCurrency(Math.abs(txToDelete?.amount ?? 0))}.
+              To confirm, type "delete" in the box below.
+            </AlertDialogDescription>
+            <Input
+              placeholder="type 'delete' to confirm"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              className="mt-4"
+            />
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (txToDelete) {
+                  deleteTransaction.mutate(txToDelete.id, {
+                    onSuccess: () => {
+                      setDeleteOpen(false);
+                      setTxToDelete(null);
+                      setDeleteConfirmation("");
+                    },
+                  });
+                }
+              }}
+              disabled={deleteConfirmation !== "delete"}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

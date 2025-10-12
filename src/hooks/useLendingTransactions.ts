@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 import { DateRange } from './useDateRangeFilter';
 
-interface LendingTransaction {
+export interface LendingTransaction {
   id: string;
   user_id: string;
   type: 'lent' | 'borrowed' | 'repaid_by_them' | 'repaid_by_me';

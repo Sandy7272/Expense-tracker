@@ -62,7 +62,7 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-white/10">
           <h1 className="text-xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
-            ⚡ CyberFinance
+            ⚡ Expense Tracker
           </h1>
           <Button
             variant="ghost"

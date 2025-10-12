@@ -46,6 +46,7 @@ export default function Transactions() {
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const handleCsvImport = async (importedTransactions: any[]) => {
     const promises = importedTransactions.map(tx => 
@@ -417,27 +418,36 @@ export default function Transactions() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete transaction?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the transaction
-                {txToDelete?.description ? ` "${txToDelete.description}"` : ""} with amount {formatCurrency(Math.abs(txToDelete?.amount ?? 0))}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (txToDelete) {
-                    deleteTransaction.mutate(txToDelete.id, {
-                      onSuccess: () => {
-                        setDeleteOpen(false)
-                        setTxToDelete(null)
-                      },
-                    })
-                  }
-                }}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
+                  This action cannot be undone. This will permanently delete the transaction
+                  {txToDelete?.description ? ` "${txToDelete.description}"` : ""} with amount {formatCurrency(Math.abs(txToDelete?.amount ?? 0))}.
+                  To confirm, type "delete" in the box below.
+                </AlertDialogDescription>
+                <Input
+                  placeholder="type 'delete' to confirm"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  className="mt-4"
+                />
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (txToDelete) {
+                      deleteTransaction.mutate(txToDelete.id, {
+                        onSuccess: () => {
+                          setDeleteOpen(false);
+                          setTxToDelete(null);
+                          setDeleteConfirmation("");
+                        },
+                      });
+                    }
+                  }}
+                  disabled={deleteConfirmation !== "delete"}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
@@ -447,11 +457,21 @@ export default function Transactions() {
               <AlertDialogTitle>Delete selected transactions?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete {selectedTransactions.size} transaction{selectedTransactions.size !== 1 ? 's' : ''}.
+                To confirm, type "delete" in the box below.
               </AlertDialogDescription>
+              <Input
+                placeholder="type 'delete' to confirm"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                className="mt-4"
+              />
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleBulkDelete}>
+              <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                disabled={deleteConfirmation !== "delete"}
+              >
                 Delete {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}
               </AlertDialogAction>
             </AlertDialogFooter>

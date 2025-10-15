@@ -17,13 +17,14 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("signin");
 
   useEffect(() => {
     // Check if user is already authenticated
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        navigate('/dashboard');
       }
     };
     checkUser();
@@ -34,23 +35,27 @@ export default function Auth() {
     setLoading(true);
     setError(null);
 
-    const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
     });
 
     if (error) {
-      setError(error.message);
+      let errorMessage = error.message;
+      if (error.message.includes("Email rate limit exceeded")) {
+        errorMessage = "Too many attempts. Please try again later.";
+      } else if (error.message.includes("already registered")) {
+        errorMessage = "This email is already registered. Please sign in.";
+      } else if (error.message.includes("Password should be at least 6 characters")) {
+        errorMessage = "Password must be at least 6 characters long.";
+      }
+      setError(errorMessage);
     } else {
       toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your registration.",
+        title: "Welcome!",
+        description: "You have successfully created an account.",
       });
+      navigate('/dashboard');
     }
     setLoading(false);
   };
@@ -66,9 +71,17 @@ export default function Auth() {
     });
 
     if (error) {
-      setError(error.message);
+      let errorMessage = error.message;
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      setError(errorMessage);
     } else {
-      navigate('/');
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
+      });
+      navigate('/dashboard');
     }
     setLoading(false);
   };
@@ -86,11 +99,11 @@ export default function Auth() {
             Expense Tracker
           </CardTitle>
           <CardDescription>
-            Sign in to your account or create a new one
+            {activeTab === "signin" ? "Sign in to your account" : "Create a new account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 glass-card">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -136,6 +149,12 @@ export default function Auth() {
                   Sign In
                 </Button>
               </form>
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Need an account?{" "}
+                <Button variant="link" className="p-0" onClick={() => setActiveTab("signup")}>
+                  Sign Up
+                </Button>
+              </p>
             </TabsContent>
             
             <TabsContent value="signup">
@@ -178,6 +197,12 @@ export default function Auth() {
                   Create Account
                 </Button>
               </form>
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Already have an account?{" "}
+                <Button variant="link" className="p-0" onClick={() => setActiveTab("signin")}>
+                  Sign In
+                </Button>
+              </p>
             </TabsContent>
           </Tabs>
         </CardContent>

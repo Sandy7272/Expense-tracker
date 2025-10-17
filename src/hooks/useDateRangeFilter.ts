@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
-import { useTransactions } from './useTransactions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useGlobalDateRange } from '@/contexts/DateRangeContext';
 
 export interface DateRange {
   from: Date;
@@ -13,24 +12,8 @@ export interface DateRangePreset {
   range: DateRange;
 }
 
-let globalDateRange: DateRange = {
-  from: startOfMonth(new Date()),
-  to: endOfMonth(new Date())
-};
-
 export function useDateRangeFilter() {
-  const { transactions } = useTransactions();
-  const [dateRange, setDateRangeState] = useState<DateRange>(globalDateRange);
-  const queryClient = useQueryClient();
-
-  const setDateRange = useCallback((range: DateRange) => {
-    globalDateRange = range;
-    setDateRangeState(range);
-    // Force all queries to refetch when date range changes
-    queryClient.invalidateQueries({ queryKey: ['investment-data'] });
-    queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['transactions'] });
-  }, [queryClient]);
+  const { dateRange, setDateRange } = useGlobalDateRange();
 
   const presets: DateRangePreset[] = useMemo(() => {
     const now = new Date();
@@ -73,12 +56,6 @@ export function useDateRangeFilter() {
     ];
   }, []);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return transactionDate >= dateRange.from && transactionDate <= dateRange.to;
-    });
-  }, [transactions, dateRange]);
 
   const formatDateRange = (range: DateRange) => {
     const isSameMonth = format(range.from, 'yyyy-MM') === format(range.to, 'yyyy-MM');
@@ -94,7 +71,6 @@ export function useDateRangeFilter() {
     dateRange,
     setDateRange,
     presets,
-    filteredTransactions,
     formatDateRange
   };
 }

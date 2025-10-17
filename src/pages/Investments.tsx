@@ -10,6 +10,9 @@ import { useInvestmentData, type InvestmentTransaction } from "@/hooks/useInvest
 import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3, Target, AlertCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTransactions } from "@/hooks/useTransactions";
+import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
+import { motion, useSpring, useMotionValueEvent } from "framer-motion";
+import { useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,9 +25,29 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
+interface AnimatedProgressBarProps {
+  value: number;
+}
+
+const AnimatedProgressBar = ({ value }: AnimatedProgressBarProps) => {
+  const animatedValue = useSpring(0, { stiffness: 100, damping: 30 });
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    animatedValue.set(value);
+  }, [animatedValue, value]);
+
+  useMotionValueEvent(animatedValue, "change", (latest) => {
+    setDisplayValue(latest);
+  });
+
+  return <Progress value={displayValue} className="h-3" />;
+};
+
 export default function Investments() {
   const navigate = useNavigate();
   const { deleteTransaction } = useTransactions();
+  const [addInvestmentOpen, setAddInvestmentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [txToDelete, setTxToDelete] = useState<InvestmentTransaction | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -81,8 +104,14 @@ export default function Investments() {
         return 'High';
       case 'Insurance':
         return 'Low';
-      case 'Bhishi':
+      case 'Chit Funds':
         return 'Very Low';
+      case 'Gold':
+        return 'Low';
+      case 'Crypto':
+        return 'High';
+      case 'Policy':
+        return 'Low';
       default:
         return 'Moderate';
     }
@@ -104,7 +133,7 @@ export default function Investments() {
             </div>
             <Button
               className="cyber-button"
-              onClick={() => navigate('/transactions')}
+              onClick={() => setAddInvestmentOpen(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Investment
@@ -113,61 +142,85 @@ export default function Investments() {
 
           {/* Portfolio Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Invested</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(totalInvested)}</p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Current Value</p>
-                    <p className="text-2xl font-bold text-primary">{formatCurrency(totalCurrentValue)}</p>
-                  </div>
-                  <PieChart className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Returns</p>
-                    <div className="flex items-center gap-2">
-                      <p className={`text-2xl font-bold ${getReturnColor(totalReturns)}`}>
-                        {totalReturns >= 0 ? '+' : ''}{formatCurrency(totalReturns)}
-                      </p>
-                      {totalReturns >= 0 ? (
-                        <TrendingUp className="h-5 w-5 text-success" />
-                      ) : (
-                        <TrendingDown className="h-5 w-5 text-expense" />
-                      )}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="glass-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Invested</p>
+                      <p className="text-2xl font-bold text-foreground">{formatCurrency(totalInvested)}</p>
                     </div>
-                    <p className={`text-sm ${getReturnColor(totalReturns)}`}>
-                      {returnsPercentage >= 0 ? '+' : ''}{returnsPercentage.toFixed(2)}%
-                    </p>
+                    <DollarSign className="h-8 w-8 text-primary" />
                   </div>
-                  {totalReturns >= 0 ? (
-                    <TrendingUp className="h-8 w-8 text-success" />
-                  ) : (
-                    <TrendingDown className="h-8 w-8 text-expense" />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="glass-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Value</p>
+                      <p className="text-2xl font-bold text-primary">{formatCurrency(totalCurrentValue)}</p>
+                    </div>
+                    <PieChart className="h-8 w-8 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="glass-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Returns</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-2xl font-bold ${getReturnColor(totalReturns)}`}>
+                          {totalReturns >= 0 ? '+' : ''}{formatCurrency(totalReturns)}
+                        </p>
+                        {totalReturns >= 0 ? (
+                          <TrendingUp className="h-5 w-5 text-success" />
+                        ) : (
+                          <TrendingDown className="h-5 w-5 text-expense" />
+                        )}
+                      </div>
+                      <p className={`text-sm ${getReturnColor(totalReturns)}`}>
+                        {returnsPercentage >= 0 ? '+' : ''}{returnsPercentage.toFixed(2)}%
+                      </p>
+                    </div>
+                    {totalReturns >= 0 ? (
+                      <TrendingUp className="h-8 w-8 text-success" />
+                    ) : (
+                      <TrendingDown className="h-8 w-8 text-expense" />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
 
           {/* Investment Breakdown Chart */}
-          <InvestmentBreakdown data={investmentData} />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <InvestmentBreakdown data={investmentData} />
+          </motion.div>
 
           {/* Investment Holdings */}
           <Card className="glass-card">
@@ -267,26 +320,36 @@ export default function Investments() {
               <CardDescription>Track progress towards your investment targets based on your current investments</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="space-y-2"
+              >
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Retirement Fund Target</span>
                   <span className="text-sm font-medium">{formatCurrency(totalInvested)} / ₹50,00,000</span>
                 </div>
-                <Progress value={(totalInvested / 5000000) * 100} className="h-3" />
+                <AnimatedProgressBar value={(totalInvested / 5000000) * 100} />
                 <div className="text-xs text-muted-foreground">
                   {totalInvested > 0
                     ? `${((totalInvested / 5000000) * 100).toFixed(1)}% complete - Keep investing!`
                     : "Start investing to reach your retirement goal"
                   }
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="space-y-2">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                className="space-y-2"
+              >
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">House Down Payment</span>
                   <span className="text-sm font-medium">{formatCurrency(Math.min(totalInvested, 2000000))} / ₹20,00,000</span>
                 </div>
-                <Progress value={(Math.min(totalInvested, 2000000) / 2000000) * 100} className="h-3" />
+                <AnimatedProgressBar value={(Math.min(totalInvested, 2000000) / 2000000) * 100} />
                 <div className="text-xs text-muted-foreground">
                   {totalInvested >= 2000000
                     ? "Goal achieved! 🎉"
@@ -295,14 +358,19 @@ export default function Investments() {
                       : "Start saving for your dream home"
                   }
                 </div>
-              </div>
+              </motion.div>
               
-              <div className="space-y-2">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.7 }}
+                className="space-y-2"
+              >
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Child Education Fund</span>
                   <span className="text-sm font-medium">{formatCurrency(Math.min(totalInvested * 0.3, 1500000))} / ₹15,00,000</span>
                 </div>
-                <Progress value={(Math.min(totalInvested * 0.3, 1500000) / 1500000) * 100} className="h-3" />
+                <AnimatedProgressBar value={(Math.min(totalInvested * 0.3, 1500000) / 1500000) * 100} />
                 <div className="text-xs text-muted-foreground">
                   {(totalInvested * 0.3) >= 1500000
                     ? "Education fund secured! 🎓"
@@ -311,13 +379,12 @@ export default function Investments() {
                       : "Secure your child's future education"
                   }
                 </div>
-              </div>
+              </motion.div>
 
               {totalInvested === 0 && (
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg text-center">
                   <p className="text-sm text-muted-foreground">
-                    💡 <strong>Pro Tip:</strong> Add investment transactions with categories like "Mutual Funds", "Insurance",
-                    "Bhishi", or "Investment" to start tracking your progress towards these goals!
+                    💡 <strong>Pro Tip:</strong> Add investment transactions with categories like "Mutual Funds", "Stocks", "Gold", "Crypto", "Chit Funds", "Policy", or "Investment" to start tracking your progress towards these goals!
                   </p>
                 </div>
               )}
@@ -325,6 +392,12 @@ export default function Investments() {
           </Card>
         </div>
       </DashboardLayout>
+
+      <AddExpenseModal
+        open={addInvestmentOpen}
+        onOpenChange={setAddInvestmentOpen}
+        defaultType="investment"
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

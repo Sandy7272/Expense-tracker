@@ -4,7 +4,6 @@ import { FinancialSummaryCards } from "@/components/dashboard/FinancialSummaryCa
 import { InvestmentBreakdown } from "@/components/dashboard/InvestmentBreakdown";
 import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
 import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
-import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
@@ -19,13 +18,10 @@ import { format } from "date-fns";
 export default function Index() {
   const [showAddModal, setShowAddModal] = useState(false);
   const { transactions, isLoading } = useTransactions();
-  const { filteredTransactions, dateRange } = useDateRangeFilter();
-  const { investmentData, isLoading: investmentLoading } = useInvestmentData(dateRange);
-  const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions(dateRange);
-  
-  const handleDateRangeChange = (range: DateRange) => {
-    // Date range change is handled by the useDateRangeFilter hook
-  };
+  const { transactions: filteredTransactions } = useTransactions(); // Use transactions directly from hook
+  const { dateRange } = useDateRangeFilter(); // Get dateRange from global context
+  const { investmentData, isLoading: investmentLoading } = useInvestmentData(); // Use global dateRange
+  const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions(); // Use global dateRange
 
   // Process lending transactions for overview
   const lendBorrowData = useMemo(() => {
@@ -132,7 +128,6 @@ export default function Index() {
             </h1>
             <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
           </div>
-          <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
         </div>
 
         <FinancialSummaryCards {...financialData} />
@@ -140,7 +135,7 @@ export default function Index() {
         <EMITrackingCard />
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <InvestmentBreakdown data={investmentData || { mutualFunds: 0, stocks: 0, insurancePolicy: 0, bhishi: 0, totalInvestment: 0 }} />
+          <InvestmentBreakdown data={investmentData || { mutualFunds: 0, stocks: 0, insurancePolicy: 0, chitFunds: 0, gold: 0, crypto: 0, policy: 0, generalInvestment: 0, totalInvestment: 0 }} />
           <LendBorrowOverview data={lendBorrowData} />
         </div>
 

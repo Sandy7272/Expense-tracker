@@ -15,8 +15,8 @@ import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
 import { useSettings } from "@/hooks/useSettings";
 import { CsvImporter } from "@/components/CsvImporter";
-import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { useDateRangeFilter } from "@/hooks/useDateRangeFilter";
+import { useGlobalDateRange } from "@/contexts/DateRangeContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,8 @@ import {
 
 export default function Transactions() {
   const { transactions, isLoading, deleteTransaction, createTransaction, bulkDeleteTransactions } = useTransactions();
-  const { filteredTransactions: dateFilteredTransactions, formatDateRange, dateRange } = useDateRangeFilter();
+  const { dateRange } = useGlobalDateRange();
+  const { formatDateRange } = useDateRangeFilter();
   const { syncData, isSyncing } = useGoogleSheetsSync();
   const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +84,7 @@ export default function Transactions() {
     setBulkDeleteOpen(false);
   };
 
-  const filteredTransactions = dateFilteredTransactions.filter((transaction) => {
+  const filteredTransactions = transactions.filter((transaction) => {
     const desc = (transaction.description || "").toLowerCase();
     const cat = (transaction.category || "").toLowerCase();
     const type = (transaction.type || "").toLowerCase();
@@ -276,7 +277,7 @@ export default function Transactions() {
               <div>
                 <CardTitle>Transaction History</CardTitle>
                 <CardDescription>
-                  {filteredTransactions.length} of {dateFilteredTransactions.length} transactions ({formatDateRange(dateRange)})
+                  {filteredTransactions.length} of {transactions.length} transactions ({formatDateRange(dateRange)})
                   {selectedTransactions.size > 0 && ` • ${selectedTransactions.size} selected`}
                 </CardDescription>
               </div>

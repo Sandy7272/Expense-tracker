@@ -7,21 +7,88 @@ import {
   CreditCard, Shield, TrendingUp, LineChart, Gift, ArrowUpRight,
   ShoppingCart, Heart, Coffee, ShoppingBag, Car, Plane, Smartphone, Wrench,
   FileText, MoreHorizontal, Film, Laptop, Scissors, ArrowDownRight,
-  ArrowDownLeft, Wallet, Briefcase, Building, Plus
-} from "lucide-react";
+  ArrowDownLeft, Wallet, Briefcase, Building, Plus, Utensils, Home, Droplet,
+  Wifi, Receipt, Bus, Stethoscope, Dumbbell, BookOpen, Zap, PiggyBank,
+  GraduationCap, Handshake, BriefcaseBusiness, Landmark, WalletMinimal,
+  Ticket, Shirt, Soup, Sprout, Lightbulb, Package, Bath,
+  Dna, Microscope, Palette, Puzzle, Rocket, ScrollText,
+  Sparkles, Sun, Tent, TreePine, Umbrella, Users,
+  Vegan, Volume2, Waves, Wheat, Wine, X,
+  ZapOff, ZoomIn, ZoomOut,
+ } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CategorySelectorProps {
   selectedCategory?: string;
   onCategoryChange: (category: string) => void;
-  transactionType: 'income' | 'expense';
+  transactionType: 'income' | 'expense' | 'investment';
 }
 
 const iconMap: Record<string, any> = {
   CreditCard, Shield, TrendingUp, LineChart, Gift, ArrowUpRight,
   ShoppingCart, Heart, Coffee, ShoppingBag, Car, Plane, Smartphone, Wrench,
   FileText, MoreHorizontal, Film, Laptop, Scissors, ArrowDownRight,
-  ArrowDownLeft, Wallet, Briefcase, Building, Plus, Fuel: Car, Bag: ShoppingBag
+  ArrowDownLeft, Wallet, Briefcase, Building, Plus, Utensils, Home, Droplet,
+  Wifi, Receipt, Bus, Stethoscope, Dumbbell, BookOpen, Zap, PiggyBank,
+  GraduationCap, Handshake, BriefcaseBusiness, Landmark, WalletMinimal,
+  Ticket, Shirt, Soup, Sprout, Lightbulb, Package, Bath,
+  Dna, Microscope, Palette, Puzzle, Rocket, ScrollText,
+  Sparkles, Sun, Tent, TreePine, Umbrella, Users,
+  Vegan, Volume2, Waves, Wheat, Wine, X,
+  ZapOff, ZoomIn, ZoomOut,
+  // Direct mappings for category icons
+  Fuel: Car,
+  Bag: ShoppingBag,
+  Electricity: Zap,
+  Water: Droplet,
+  Internet: Wifi,
+  Phone: Smartphone,
+  Gas: Lightbulb,
+  Subscriptions: Receipt,
+  PublicTransport: Bus,
+  VehicleMaintenance: Wrench,
+  DoctorPharmacy: Stethoscope,
+  Gym: Dumbbell,
+  Wellness: Heart,
+  MoviesEvents: Film,
+  Travel: Plane,
+  Shopping: ShoppingBag,
+  Donations: Gift,
+  Education: BookOpen,
+  Other: MoreHorizontal,
+  Groceries: ShoppingCart,
+  Restaurants: Utensils,
+  HouseholdSupplies: Home,
+  PersonalCare: Bath,
+  Clothing: Shirt,
+  RentMortgage: Building,
+  LoansEMIs: CreditCard,
+  Insurance: Shield,
+  HealthWellness: Heart,
+  EntertainmentLeisure: Film,
+  Miscellaneous: MoreHorizontal,
+  EMI: CreditCard,
+  MutualFunds: TrendingUp,
+  Stocks: LineChart,
+  UsneDile: ArrowUpRight,
+  UsneGhetle: ArrowDownRight,
+  UsnePrtDile: ArrowDownLeft,
+  ChitFunds: PiggyBank,
+  Policy: Shield,
+  Fees: FileText,
+  Recharges: Smartphone,
+  BikesMaintense: Wrench,
+  ElectronicsDevices: Laptop,
+  GroomingExpense: Scissors,
+  FoodDrinks: Coffee,
+  HealthWellbeing: Heart,
+  Gold: PiggyBank,
+  Crypto: WalletMinimal,
+  Salary: BriefcaseBusiness,
+  Freelance: Briefcase,
+  InvestmentsIncome: Landmark,
+  GiftIncome: Gift,
+  OtherIncome: MoreHorizontal,
 };
 
 export function CategorySelector({ selectedCategory, onCategoryChange, transactionType }: CategorySelectorProps) {
@@ -30,34 +97,96 @@ export function CategorySelector({ selectedCategory, onCategoryChange, transacti
 
   // Filter categories by type and search term
   const filteredCategories = categories.filter(category => {
-    // For now, show all categories regardless of type since the existing data doesn't have type
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    const matchesType =
+      category.type === 'both' ||
+      category.type === transactionType;
+    return matchesSearch && matchesType;
   });
 
   // Group categories by common types
-  const expenseCategories = filteredCategories.filter(cat => 
-    ['EMI', 'Insurance', 'Mutual Funds', 'Petrol', 'Groceries', 'Shopping', 'Travel', 'Food & Drinks', 'Health & Wellbeing', 'Entertainment', 'Electronics Devices', 'Grooming Expense', 'Fees', 'Others', 'Recharges', 'Bikes Maintense'].some(expense => 
-      cat.name.toLowerCase().includes(expense.toLowerCase())
+  const incomeCategories = filteredCategories.filter(cat =>
+    ['Salary', 'Freelance', 'Investments Income', 'Gift Income', 'Other Income'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
     )
   );
 
-  const lendingCategories = filteredCategories.filter(cat =>
-    ['Usne Dile', 'Usne Ghetle', 'Usne Prt Dile'].some(lending =>
-      cat.name.toLowerCase().includes(lending.toLowerCase())
+  const dailyLivingCategories = filteredCategories.filter(cat =>
+    ['Groceries', 'Restaurants', 'Household Supplies', 'Personal Care', 'Clothing'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const billsUtilitiesCategories = filteredCategories.filter(cat =>
+    ['Rent/Mortgage', 'Electricity', 'Water', 'Internet', 'Phone', 'Gas', 'Subscriptions'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const transportationCategories = filteredCategories.filter(cat =>
+    ['Fuel', 'Public Transport', 'Vehicle Maintenance'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const loansEMIsCategories = filteredCategories.filter(cat =>
+    ['Loans & EMIs', 'EMI Payment'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const insuranceCategories = filteredCategories.filter(cat =>
+    ['Insurance'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const healthWellnessCategories = filteredCategories.filter(cat =>
+    ['Doctor/Pharmacy', 'Gym', 'Wellness', 'Health & Wellbeing'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const entertainmentLeisureCategories = filteredCategories.filter(cat =>
+    ['Movies/Events', 'Travel', 'Shopping', 'Entertainment', 'Food & Drinks'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
     )
   );
 
   const investmentCategories = filteredCategories.filter(cat =>
-    ['Stocks', 'Bhishi'].some(investment =>
-      cat.name.toLowerCase().includes(investment.toLowerCase())
+    ['Mutual Funds', 'Stocks', 'Crypto', 'Gold', 'Chit Funds', 'Policy', 'Investment'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
     )
   );
 
+  const lendingBorrowingCategories = filteredCategories.filter(cat =>
+    ['Usne Dile', 'Usne Ghetle', 'Usne Prt Dile'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const miscellaneousCategories = filteredCategories.filter(cat =>
+    ['Gifts', 'Donations', 'Education', 'Other', 'Fees', 'Recharges', 'Bikes Maintense', 'Electronics Devices', 'Grooming Expense'].some(name =>
+      cat.name.toLowerCase().includes(name.toLowerCase())
+    )
+  );
+
+  const allGroupedCategories = [
+    ...incomeCategories,
+    ...dailyLivingCategories,
+    ...billsUtilitiesCategories,
+    ...transportationCategories,
+    ...loansEMIsCategories,
+    ...insuranceCategories,
+    ...healthWellnessCategories,
+    ...entertainmentLeisureCategories,
+    ...investmentCategories,
+    ...lendingBorrowingCategories,
+    ...miscellaneousCategories,
+  ];
+
   const otherCategories = filteredCategories.filter(cat =>
-    !expenseCategories.includes(cat) && 
-    !lendingCategories.includes(cat) && 
-    !investmentCategories.includes(cat)
+    !allGroupedCategories.includes(cat)
   );
 
   const renderCategoryButton = (category: Category) => {
@@ -67,6 +196,7 @@ export function CategorySelector({ selectedCategory, onCategoryChange, transacti
     return (
       <Button
         key={category.id}
+        type="button"
         variant="outline"
         className={cn(
           "category-button btn-professional h-auto",
@@ -85,7 +215,21 @@ export function CategorySelector({ selectedCategory, onCategoryChange, transacti
             <IconComponent className="h-5 w-5" />
           </div>
           <span className="text-xs font-medium text-center leading-tight">
-            {category.name}
+            {category.name.includes('/') ? (
+              <>
+                {category.name.split('/')[0]}
+                <br />
+                {category.name.split('/').slice(1).join('/')}
+              </>
+            ) : category.name.includes(' ') ? (
+              <>
+                {category.name.split(' ')[0]}
+                <br />
+                {category.name.split(' ').slice(1).join(' ')}
+              </>
+            ) : (
+              category.name
+            )}
           </span>
         </div>
       </Button>
@@ -131,29 +275,41 @@ export function CategorySelector({ selectedCategory, onCategoryChange, transacti
       </div>
 
       <ScrollArea className="h-96 pr-4">
-        <div className="space-y-6">
-          {renderCategoryGroup("Daily Expenses", expenseCategories)}
-          
-          {lendingCategories.length > 0 && (
-            <>
-              <Separator />
-              {renderCategoryGroup("Lending & Borrowing", lendingCategories)}
-            </>
-          )}
-          
-          {investmentCategories.length > 0 && (
-            <>
-              <Separator />
-              {renderCategoryGroup("Investments", investmentCategories)}
-            </>
-          )}
-          
-          {otherCategories.length > 0 && (
-            <>
-              <Separator />
-              {renderCategoryGroup("Other", otherCategories)}
-            </>
-          )}
+        <div>
+          {(() => {
+            const groups =
+              transactionType === 'expense'
+                ? [
+                    { title: "Daily Living", categories: dailyLivingCategories },
+                    { title: "Bills & Utilities", categories: billsUtilitiesCategories },
+                    { title: "Transportation", categories: transportationCategories },
+                    { title: "Loans & EMIs", categories: loansEMIsCategories },
+                    { title: "Insurance", categories: insuranceCategories },
+                    { title: "Health & Wellness", categories: healthWellnessCategories },
+                    { title: "Entertainment & Leisure", categories: entertainmentLeisureCategories },
+                    { title: "Investments", categories: investmentCategories },
+                    { title: "Lending & Borrowing", categories: lendingBorrowingCategories },
+                    { title: "Miscellaneous", categories: miscellaneousCategories },
+                  ]
+              : transactionType === 'investment'
+              ? [
+                  { title: "Investments", categories: investmentCategories },
+                ]
+              : [{ title: "Income", categories: incomeCategories }];
+
+            if (otherCategories.length > 0) {
+              groups.push({ title: "Uncategorized", categories: otherCategories });
+            }
+
+            const visibleGroups = groups.filter(g => g.categories.length > 0);
+
+            return visibleGroups.map((group, index) => (
+              <div key={group.title}>
+                {renderCategoryGroup(group.title, group.categories)}
+                {index < visibleGroups.length - 1 && <Separator className="my-6" />}
+              </div>
+            ));
+          })()}
         </div>
       </ScrollArea>
 

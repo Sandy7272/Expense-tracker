@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
-import { DateRange } from './useDateRangeFilter';
+import { useGlobalDateRange } from '@/contexts/DateRangeContext';
+import { format } from 'date-fns';
 
 export interface LendingTransaction {
   id: string;
@@ -29,9 +30,10 @@ export interface CreateLendingTransactionData {
   related_transaction_id?: string;
 }
 
-export const useLendingTransactions = (dateRange?: DateRange) => {
+export const useLendingTransactions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { dateRange } = useGlobalDateRange();
 
   // Fetch lending transactions
   const {
@@ -39,23 +41,17 @@ export const useLendingTransactions = (dateRange?: DateRange) => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['lending-transactions', user?.id, dateRange?.from, dateRange?.to],
+    queryKey: ['lending-transactions', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('lending_transactions')
         .select('*')
-        .eq('user_id', user.id);
-
-      // Apply date range filter if provided
-      if (dateRange) {
-        query = query
-          .gte('date', dateRange.from.toISOString().split('T')[0])
-          .lte('date', dateRange.to.toISOString().split('T')[0]);
-      }
-
-      const { data, error } = await query.order('date', { ascending: false });
+        .eq('user_id', user.id)
+        .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
+        .lte('date', format(dateRange.to, 'yyyy-MM-dd'))
+        .order('date', { ascending: false });
 
       if (error) throw error;
       return data as LendingTransaction[];

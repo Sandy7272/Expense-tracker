@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import type { InvestmentTransaction } from './useInvestmentData';
+import { useGlobalDateRange } from '@/contexts/DateRangeContext';
+import { format } from 'date-fns';
 
 export interface Transaction {
   id: string;
@@ -36,13 +38,14 @@ export function useTransactions() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { dateRange } = useGlobalDateRange();
 
   const {
     data: transactions = [],
     isLoading,
     error
   } = useQuery({
-    queryKey: ['transactions', user?.id],
+    queryKey: ['transactions', user?.id, dateRange],
     queryFn: async () => {
       if (!user) return [];
       
@@ -50,6 +53,8 @@ export function useTransactions() {
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
+        .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
+        .lte('date', format(dateRange.to, 'yyyy-MM-dd'))
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -80,6 +85,7 @@ export function useTransactions() {
         const newData = oldData ? [...oldData, newTransaction] : [newTransaction];
         return newData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['lending-transactions'] }); // Invalidate lending for dashboard updates
       toast({
@@ -114,6 +120,7 @@ export function useTransactions() {
       queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (oldData) => {
         return oldData ? oldData.map(tx => (tx.id === updatedTransaction.id ? { ...tx, ...updatedTransaction } : tx)) : [];
       });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['lending-transactions'] }); // Invalidate lending for dashboard updates
       toast({

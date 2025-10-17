@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useLoans } from './useLoans';
 import { useTransactions } from './useTransactions';
 import { useAuth } from './useAuth';
+import { useGlobalDateRange } from '@/contexts/DateRangeContext';
+import { format } from 'date-fns';
 
 export interface EMISummary {
   totalMonthlyEMI: number;
@@ -21,6 +23,7 @@ export function useAllEMIData() {
   const { user } = useAuth();
   const { loans, isLoading: loansLoading } = useLoans();
   const { transactions, isLoading: transactionsLoading } = useTransactions();
+  const { dateRange } = useGlobalDateRange();
 
   const emiSummary: EMISummary = useMemo(() => {
     if (!user || !loans.length) {
@@ -36,17 +39,15 @@ export function useAllEMIData() {
     const activeLoans = loans.filter(loan => loan.status === 'active');
     const totalMonthlyEMI = activeLoans.reduce((sum, loan) => sum + Number(loan.monthly_emi), 0);
 
-    // Get current month's EMI transactions
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const currentMonthStart = dateRange.from;
+    const currentMonthEnd = dateRange.to;
 
     const thisMonthEMITransactions = transactions.filter(t => {
       if (!t.loan_id) return false;
       const transactionDate = new Date(t.date);
       return (
-        transactionDate.getMonth() === currentMonth &&
-        transactionDate.getFullYear() === currentYear &&
+        transactionDate >= currentMonthStart &&
+        transactionDate <= currentMonthEnd &&
         t.type === 'expense'
       );
     });
@@ -56,19 +57,25 @@ export function useAllEMIData() {
       0
     );
 
-    // Calculate upcoming EMIs for each active loan
     const upcomingEMIs = activeLoans.map(loan => {
-      const startDate = new Date(loan.start_date);
+      const loanStartDate = new Date(loan.start_date);
+      const loanStartDay = loanStartDate.getDate();
+
+      let nextDueDate = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth(), loanStartDay);
+
+      // If the calculated due date is before the start of the current range,
+      // and it's not the same month, move it to the next month.
+      // This handles cases where the loan's start day is late in the month
+      // and the current date range starts earlier.
+      if (nextDueDate < currentMonthStart && nextDueDate.getMonth() === currentMonthStart.getMonth()) {
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
       
-      // Calculate next EMI due date (same day each month as start date)
-      const nextDueDate = new Date(currentYear, currentMonth, startDate.getDate());
-      
-      // If the due date has passed this month, set it for next month
-      if (nextDueDate < now) {
+      // Ensure the due date is within the selected date range, or the next one if it passed
+      if (nextDueDate < currentMonthStart) {
         nextDueDate.setMonth(nextDueDate.getMonth() + 1);
       }
 
-      // Check if this month's EMI is already paid
       const isPaid = thisMonthEMITransactions.some(t => t.loan_id === loan.id);
 
       return {
@@ -93,7 +100,7 @@ export function useAllEMIData() {
         new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
       ),
     };
-  }, [loans, transactions, user]);
+  }, [loans, transactions, user, dateRange]);
 
   return {
     emiSummary,

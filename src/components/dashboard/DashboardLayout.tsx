@@ -11,6 +11,7 @@ import {
   Users,
   LogOut
 } from "lucide-react";
+import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
@@ -36,6 +37,8 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { signOut, user } = useAuth();
+
+  const showDateFilterAndRefresh = !['/loans', '/settings'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/5 relative">
@@ -158,7 +161,8 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
             </div>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              {onRefresh && (
+              {showDateFilterAndRefresh && <DateRangeSelector />}
+              {showDateFilterAndRefresh && onRefresh && (
                 <Button
                   variant="outline"
                   size="sm"

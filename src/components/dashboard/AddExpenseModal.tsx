@@ -25,15 +25,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction?: Transaction;
+  defaultType?: "income" | "expense" | "lend" | "borrow" | "investment" | "emi";
 }
 
 const formSchema = z.object({
-  type: z.enum(["income", "expense"]),
+  type: z.enum(["income", "expense", "lend", "borrow", "investment", "emi"]),
   date: z.date({ required_error: "Date is required" }),
   category: z.string().min(1, "Category is required"),
   amount: z
@@ -47,16 +49,17 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddExpenseModal({ open, onOpenChange, transaction }: AddExpenseModalProps) {
+export function AddExpenseModal({ open, onOpenChange, transaction, defaultType }: AddExpenseModalProps) {
   const { createTransaction, updateTransaction } = useTransactions();
   const { loans } = useLoans();
   const [dateOpen, setDateOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    mode: "onChange",
+    mode: "onBlur",
     defaultValues: {
-      type: "expense",
+      type: defaultType || "expense",
       date: new Date(),
       category: "",
       amount: "",
@@ -70,7 +73,7 @@ useEffect(() => {
   if (open) {
     if (transaction) {
       form.reset({
-        type: transaction.type,
+        type: transaction.type as "income" | "expense" | "lend" | "borrow" | "investment" | "emi",
         date: new Date(transaction.date),
         category: transaction.category || "",
         amount: String(transaction.amount ?? ""),
@@ -79,11 +82,11 @@ useEffect(() => {
         loan_id: transaction.loan_id || "",
       });
     } else {
-      form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
+      form.reset({ type: defaultType || "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
     }
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [open, transaction]);
+}, [open, transaction, defaultType]);
 
 const onSubmit = (values: FormValues) => {
   const data: CreateTransactionData = {
@@ -101,6 +104,7 @@ const onSubmit = (values: FormValues) => {
       { id: transaction.id, data },
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
           onOpenChange(false);
         },
       }
@@ -108,7 +112,8 @@ const onSubmit = (values: FormValues) => {
   } else {
     createTransaction.mutate(data, {
       onSuccess: () => {
-        form.reset({ type: "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
+        queryClient.invalidateQueries({ queryKey: ['investment-transactions'] });
+        form.reset({ type: defaultType || "expense", date: new Date(), category: "", amount: "", description: "", person: "", loan_id: "" });
         onOpenChange(false);
       },
     });
@@ -121,7 +126,9 @@ const selectedCategory = form.watch("category");
 const selectedLoanId = form.watch("loan_id");
 const isSubmitting = transaction ? updateTransaction.isPending : createTransaction.isPending;
 const spinnerText = transaction ? "Saving..." : "Adding...";
-const submitLabel = transaction ? "Save changes" : `Add ${selectedType === "income" ? "Income" : "Expense"}`;
+const submitLabel = transaction
+  ? "Save changes"
+  : `Add ${selectedType === "income" ? "Income" : (selectedType === "investment" ? "Investment" : "Expense")}`;
 
 // Auto-fill EMI amount when loan is selected
 useEffect(() => {
@@ -168,37 +175,45 @@ const suggestedLoan = useMemo(() => {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Type Selection */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => form.setValue("type", "expense", { shouldValidate: true })}
-                className={cn(
-                  "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
-                  selectedType === "expense"
-                    ? "border-expense bg-expense/10 text-expense"
-                    : "border-border hover:border-expense/50 text-muted-foreground"
-                )}
-              >
-                <div className="text-2xl mb-2">💸</div>
-                <div className="font-medium">Expense</div>
-                <div className="text-sm opacity-70">Money going out</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => form.setValue("type", "income", { shouldValidate: true })}
-                className={cn(
-                  "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
-                  selectedType === "income"
-                    ? "border-income bg-income/10 text-income"
-                    : "border-border hover:border-income/50 text-muted-foreground"
-                )}
-              >
-                <div className="text-2xl mb-2">💰</div>
-                <div className="font-medium">Income</div>
-                <div className="text-sm opacity-70">Money coming in</div>
-              </button>
-            </div>
+            {/* Type Selection - Hidden if defaultType is provided */}
+            {!defaultType && (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    form.setValue("type", "expense", { shouldValidate: true });
+                    form.setValue("category", "");
+                  }}
+                  className={cn(
+                    "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
+                    selectedType === "expense"
+                      ? "border-expense bg-expense/10 text-expense"
+                      : "border-border hover:border-expense/50 text-muted-foreground"
+                  )}
+                >
+                  <div className="text-2xl mb-2">💸</div>
+                  <div className="font-medium">Expense</div>
+                  <div className="text-sm opacity-70">Money going out</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    form.setValue("type", "income", { shouldValidate: true });
+                    form.setValue("category", "");
+                  }}
+                  className={cn(
+                    "p-4 rounded-xl border-2 transition-all duration-200 text-left btn-professional",
+                    selectedType === "income"
+                      ? "border-income bg-income/10 text-income"
+                      : "border-border hover:border-income/50 text-muted-foreground"
+                  )}
+                >
+                  <div className="text-2xl mb-2">💰</div>
+                  <div className="font-medium">Income</div>
+                  <div className="text-sm opacity-70">Money coming in</div>
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column - Basic Info */}
@@ -382,7 +397,7 @@ const suggestedLoan = useMemo(() => {
                       <CategorySelector
                         selectedCategory={form.watch("category")}
                         onCategoryChange={(category) => form.setValue("category", category, { shouldValidate: true })}
-                        transactionType={selectedType}
+                        transactionType={selectedType === "income" ? "income" : (selectedType === "investment" ? "investment" : "expense")}
                       />
                       <FormMessage />
                     </FormItem>

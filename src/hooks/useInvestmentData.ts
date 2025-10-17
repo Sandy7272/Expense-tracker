@@ -2,7 +2,8 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { DateRange } from './useDateRangeFilter';
+import { useGlobalDateRange } from '@/contexts/DateRangeContext';
+import { format } from 'date-fns';
 
 export interface InvestmentTransaction {
   id: string;
@@ -17,7 +18,11 @@ export interface InvestmentData {
   mutualFunds: number;
   stocks: number;
   insurancePolicy: number;
-  bhishi: number;
+  chitFunds: number;
+  gold: number;
+  crypto: number;
+  policy: number;
+  generalInvestment: number; // Added for the generic 'Investment' category
   totalInvestment: number;
 }
 
@@ -32,40 +37,39 @@ export interface InvestmentSummary {
 // Investment category mappings
 const INVESTMENT_CATEGORIES = {
   'Mutual Funds': 'mutualFunds',
-  'Investment': 'stocks', // General investments mapped to stocks
+  'Stocks': 'stocks',
   'Insurance': 'insurancePolicy',
-  'Bhishi': 'bhishi'
+  'Chit Funds': 'chitFunds',
+  'Gold': 'gold',
+  'Crypto': 'crypto',
+  'Policy': 'policy',
+  'Investment': 'generalInvestment', // Mapped to the new generalInvestment field
 } as const;
 
-export function useInvestmentData(dateRange?: DateRange) {
+export function useInvestmentData() {
   const { user } = useAuth();
+  const { dateRange } = useGlobalDateRange();
 
   const {
     data: investmentTransactions = [],
     isLoading,
     error
   } = useQuery({
-    queryKey: ['investment-transactions', user?.id, dateRange?.from, dateRange?.to],
+    queryKey: ['investment-transactions', user?.id, dateRange],
     queryFn: async () => {
       if (!user) return [];
       
       const investmentCategories = Object.keys(INVESTMENT_CATEGORIES);
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .in('category', investmentCategories)
-        .eq('type', 'expense') // Only count money going out (investments)
-        .eq('status', 'completed');
-
-      // Apply date range filter if provided
-      if (dateRange) {
-        query = query
-          .gte('date', dateRange.from.toISOString().split('T')[0])
-          .lte('date', dateRange.to.toISOString().split('T')[0]);
-      }
-
-      const { data, error } = await query.order('date', { ascending: false });
+        .in('type', ['expense', 'investment']) // Count both 'expense' and 'investment' types for investment categories
+        .eq('status', 'completed')
+        .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
+        .lte('date', format(dateRange.to, 'yyyy-MM-dd'))
+        .order('date', { ascending: false });
 
       if (error) throw error;
       return data as InvestmentTransaction[];
@@ -79,7 +83,11 @@ export function useInvestmentData(dateRange?: DateRange) {
       mutualFunds: 0,
       stocks: 0,
       insurancePolicy: 0,
-      bhishi: 0
+      chitFunds: 0,
+      gold: 0,
+      crypto: 0,
+      policy: 0,
+      generalInvestment: 0, // Initialize new field
     };
 
     const categorySummaries: Record<string, InvestmentSummary> = {};
@@ -116,7 +124,11 @@ export function useInvestmentData(dateRange?: DateRange) {
       mutualFunds: categoryTotals.mutualFunds,
       stocks: categoryTotals.stocks,
       insurancePolicy: categoryTotals.insurancePolicy,
-      bhishi: categoryTotals.bhishi,
+      chitFunds: categoryTotals.chitFunds,
+      gold: categoryTotals.gold,
+      crypto: categoryTotals.crypto,
+      policy: categoryTotals.policy,
+      generalInvestment: categoryTotals.generalInvestment, // Include new field
       totalInvestment
     };
 
@@ -160,8 +172,14 @@ function getDefaultRiskLevel(category: string): string {
       return 'High';
     case 'Insurance':
       return 'Low';
-    case 'Bhishi':
+    case 'Chit Funds':
       return 'Very Low';
+    case 'Gold':
+      return 'Low';
+    case 'Crypto':
+      return 'High';
+    case 'Policy':
+      return 'Low';
     default:
       return 'Moderate';
   }

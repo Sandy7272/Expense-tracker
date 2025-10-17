@@ -1,14 +1,19 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TrendingUp, Shield, Building, Coins } from "lucide-react";
+import { TrendingUp, Shield, Coins, Landmark, WalletMinimal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 
 interface InvestmentData {
   mutualFunds: number;
   stocks: number;
   insurancePolicy: number;
-  bhishi: number;
+  chitFunds: number;
+  gold: number;
+  crypto: number;
+  policy: number;
+  generalInvestment: number; // Added for the generic 'Investment' category
   totalInvestment: number;
 }
 
@@ -23,7 +28,7 @@ export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
       name: "Mutual Funds",
       amount: data.mutualFunds,
       icon: TrendingUp,
-      color: "text-primary",
+      color: "hsl(var(--primary))",
       bgColor: "bg-primary/20",
       borderColor: "border-primary/30",
       glowClass: "glow-primary"
@@ -31,31 +36,67 @@ export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
     {
       name: "Stocks",
       amount: data.stocks,
-      icon: Building,
-      color: "text-success",
+      icon: TrendingUp,
+      color: "hsl(var(--success))",
       bgColor: "bg-success/20",
       borderColor: "border-success/30",
       glowClass: "glow-success"
     },
     {
+      name: "Gold",
+      amount: data.gold,
+      icon: Coins,
+      color: "#FFD700", // Gold color
+      bgColor: "bg-yellow-500/20",
+      borderColor: "border-yellow-500/30",
+      glowClass: "glow-yellow-500"
+    },
+    {
+      name: "Crypto",
+      amount: data.crypto,
+      icon: WalletMinimal,
+      color: "#000000", // Crypto color (black)
+      bgColor: "bg-gray-800/20",
+      borderColor: "border-gray-800/30",
+      glowClass: "glow-gray-800"
+    },
+    {
+      name: "Chit Funds",
+      amount: data.chitFunds,
+      icon: Coins,
+      color: "#FF8C00", // Orange color
+      bgColor: "bg-orange-500/20",
+      borderColor: "border-orange-500/30",
+      glowClass: "glow-orange-500"
+    },
+    {
+      name: "Policy",
+      amount: data.policy,
+      icon: Shield,
+      color: "#1E90FF", // Blue color
+      bgColor: "bg-blue-500/20",
+      borderColor: "border-blue-500/30",
+      glowClass: "glow-blue-500"
+    },
+    {
       name: "Insurance Policy",
       amount: data.insurancePolicy,
       icon: Shield,
-      color: "text-warning",
+      color: "hsl(var(--warning))",
       bgColor: "bg-warning/20",
       borderColor: "border-warning/30",
       glowClass: "glow-accent"
     },
     {
-      name: "Bhishi",
-      amount: data.bhishi,
-      icon: Coins,
-      color: "text-accent",
-      bgColor: "bg-accent/20",
-      borderColor: "border-accent/30",
-      glowClass: "glow-accent"
+      name: "Investment",
+      amount: data.generalInvestment,
+      icon: Landmark,
+      color: "#6200EA", // A distinct color for general investment
+      bgColor: "bg-purple-500/20",
+      borderColor: "border-purple-500/30",
+      glowClass: "glow-purple-500"
     }
-  ];
+  ].filter(inv => inv.amount > 0); // Only show investments with amount > 0
 
   const getPercentage = (amount: number) => {
     return data.totalInvestment > 0 ? (amount / data.totalInvestment) * 100 : 0;
@@ -78,72 +119,47 @@ export function InvestmentBreakdown({ data }: InvestmentBreakdownProps) {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {investments.map((investment, index) => {
-            const Icon = investment.icon;
-            const percentage = getPercentage(investment.amount);
-            
-            return (
-              <div 
-                key={investment.name}
-                className="group relative p-4 rounded-xl glass-card hover:glass-card transition-all duration-300"
-              >
-                {/* Cyber Background Pattern */}
-                <div className="absolute inset-0 opacity-5">
-                  <div className={cn("w-full h-full rounded-xl", investment.bgColor)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="w-full h-48 md:h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={investments}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  paddingAngle={5}
+                  dataKey="amount"
+                  nameKey="name"
+                  labelLine={false}
+                >
+                  {investments.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {investments.map((item) => (
+              <div key={item.name} className="flex items-center gap-3">
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">
+                    {item.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatAmount(item.amount)}
+                  </span>
                 </div>
-                
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "p-2 rounded-lg glass-card",
-                        investment.borderColor,
-                        investment.bgColor
-                      )}>
-                        <Icon className={cn("h-4 w-4", investment.color)} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{investment.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {percentage.toFixed(1)}% of total
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={cn("font-bold", investment.color)}>
-                        {formatAmountCompact(investment.amount)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatAmount(investment.amount)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <Progress 
-                      value={percentage} 
-                      className="h-2 bg-muted/30"
-                    />
-                    <div 
-                      className={cn(
-                        "absolute top-0 left-0 h-2 rounded-full transition-all duration-1000 ease-out",
-                        investment.bgColor,
-                        "animate-pulse"
-                      )}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Hover Glow Effect */}
-                <div className={cn(
-                  "absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-                  investment.glowClass
-                )} />
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </Card>

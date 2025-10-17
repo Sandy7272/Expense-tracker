@@ -176,14 +176,14 @@
 
   /* Category Button Grid */
   .category-grid {
-    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3;
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3; /* Set to 4 columns across all larger breakpoints */
   }
 
   .category-button {
-    @apply flex flex-col items-center justify-center p-4 rounded-xl border border-border/50 
+    @apply flex flex-col items-center justify-center p-2 rounded-xl border border-border/50
            bg-card/50 hover:bg-accent/50 transition-all duration-200 cursor-pointer
            hover:border-border hover:scale-[1.02] active:scale-[0.98]
-           min-h-[100px] text-center space-y-2;
+           min-h-[90px] text-center space-y-1;
   }
 
   .category-button.selected {

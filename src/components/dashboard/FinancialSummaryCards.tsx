@@ -8,8 +8,8 @@ interface FinancialSummaryCardsProps {
   totalSpend: number;
   totalInvestment: number;
   emi: number;
-  usneDile: number;
-  usneGhetle: number;
+  moneyLent: number;
+  moneyBorrowed: number;
   savingInBank: number;
 }
 
@@ -17,10 +17,10 @@ export function FinancialSummaryCards({
   totalIncome, 
   totalSpend, 
   totalInvestment, 
-  emi, 
-  usneDile, 
-  usneGhetle, 
-  savingInBank 
+  emi,
+  moneyLent,
+  moneyBorrowed,
+  savingInBank
 }: FinancialSummaryCardsProps) {
   const { formatAmount } = useCurrency();
   
@@ -62,8 +62,8 @@ export function FinancialSummaryCards({
       emoji: "💳"
     },
     {
-      title: "Usne Dile",
-      value: formatAmount(usneDile),
+      title: "Money Lent",
+      value: formatAmount(moneyLent),
       icon: ArrowUpRight,
       gradient: "from-lending/20 to-primary/20",
       iconColor: "text-lending",
@@ -71,8 +71,8 @@ export function FinancialSummaryCards({
       emoji: "↗️"
     },
     {
-      title: "Usne Ghetle",
-      value: formatAmount(usneGhetle),
+      title: "Money Borrowed",
+      value: formatAmount(moneyBorrowed),
       icon: ArrowDownLeft,
       gradient: "from-success/20 to-income/20",
       iconColor: "text-success",

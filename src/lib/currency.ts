@@ -25,9 +25,10 @@ const getLocaleForCurrency = (currency: string): string => {
 };
 
 // Main currency formatting function
-export const formatCurrency = (amount: number, currency: string = 'INR'): string => {
-  const isNegative = amount < 0;
-  const absoluteAmount = Math.abs(amount);
+export const formatCurrency = (amount: number | null | undefined, currency: string = 'INR'): string => {
+  const numericAmount = typeof amount === 'number' ? amount : 0;
+  const isNegative = numericAmount < 0;
+  const absoluteAmount = Math.abs(numericAmount);
   
   const formatter = new Intl.NumberFormat(getLocaleForCurrency(currency), {
     style: 'currency',

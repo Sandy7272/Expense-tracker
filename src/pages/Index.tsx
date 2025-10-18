@@ -31,10 +31,10 @@ export default function Index() {
     const repaidByMe = lendingTransactions.filter(t => t.type === 'repaid_by_me').reduce((sum, t) => sum + Number(t.amount), 0);
     
     return {
-      usneDile: lent - repaidByThem, // Outstanding amount we lent
-      usnePrtAle: repaidByThem, // Amount they repaid us
-      usneGhetle: borrowed - repaidByMe, // Outstanding amount we borrowed
-      usnePrtDile: repaidByMe // Amount we repaid them
+      moneyLent: lent - repaidByThem,
+      lentRepaymentReceived: repaidByThem,
+      moneyBorrowed: borrowed - repaidByMe,
+      borrowedRepayment: repaidByMe
     };
   }, [lendingTransactions]);
 
@@ -76,8 +76,8 @@ export default function Index() {
       totalSpend: expenses,
       totalInvestment: investmentData?.totalInvestment || 0,
       emi,
-      usneDile: lendBorrowData.usneDile,
-      usneGhetle: lendBorrowData.usneGhetle,
+      moneyLent: lendBorrowData.moneyLent,
+      moneyBorrowed: lendBorrowData.moneyBorrowed,
       savingInBank: income - expenses - (investmentData?.totalInvestment || 0)
     };
   }, [filteredTransactions, investmentData, lendBorrowData]);

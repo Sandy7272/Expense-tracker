@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useLendingTransactions, CreateLendingTransactionData } from "@/hooks/useLendingTransactions";
@@ -21,6 +21,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LendingTransactionModalProps {
   open: boolean;
@@ -42,9 +49,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function LendingTransactionModal({ open, onOpenChange }: LendingTransactionModalProps) {
-  const { createTransaction } = useLendingTransactions();
+  const { createTransaction, uniquePersons, isLoadingPersons } = useLendingTransactions();
   const [dateOpen, setDateOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
+  const [showNewPersonInput, setShowNewPersonInput] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -89,10 +97,10 @@ export function LendingTransactionModal({ open, onOpenChange }: LendingTransacti
   const dueDate = form.watch("due_date");
 
   const typeOptions = [
-    { value: "lent", label: "I Lent Money", emoji: "↗️", description: "Money I gave to someone" },
-    { value: "borrowed", label: "I Borrowed Money", emoji: "↙️", description: "Money I received from someone" },
-    { value: "repaid_by_them", label: "They Repaid Me", emoji: "✅", description: "They returned money to me" },
-    { value: "repaid_by_me", label: "I Repaid Them", emoji: "💰", description: "I returned money to them" },
+    { value: "lent", label: "Money Lent", emoji: "↗️", description: "Money I gave to someone" },
+    { value: "borrowed", label: "Money Borrowed", emoji: "↙️", description: "Money I received from someone" },
+    { value: "repaid_by_them", label: "Lent Repayment Received", emoji: "✅", description: "They returned money to me" },
+    { value: "repaid_by_me", label: "Borrowed Repayment", emoji: "💰", description: "I returned money to them" },
   ];
 
   return (
@@ -139,15 +147,61 @@ export function LendingTransactionModal({ open, onOpenChange }: LendingTransacti
                   name="person_name"
                   render={({ field }) => (
                     <FormItem className="space-y-2">
-                      <FormLabel>Person/Business Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="person_name"
-                          placeholder="Enter name"
-                          className="input-professional"
-                          {...field}
-                        />
-                      </FormControl>
+                      <FormLabel>Person</FormLabel>
+                      {showNewPersonInput ? (
+                        <div className="flex items-center space-x-2">
+                          <FormControl>
+                            <Input
+                              id="person_name"
+                              placeholder="Enter new person's name"
+                              className="input-professional"
+                              {...field}
+                            />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setShowNewPersonInput(false);
+                              form.setValue("person_name", "");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          onValueChange={(value) => {
+                            if (value === "add-new-person") {
+                              setShowNewPersonInput(true);
+                              form.setValue("person_name", "");
+                            } else {
+                              field.onChange(value);
+                            }
+                          }}
+                          value={field.value}
+                          disabled={isLoadingPersons}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="input-professional">
+                              <SelectValue placeholder="Select a person" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="z-[60]">
+                            {(uniquePersons || []).map((person) => (
+                              <SelectItem key={person} value={person}>
+                                {person}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="add-new-person">
+                              <div className="flex items-center">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add New Person
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

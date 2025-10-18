@@ -4,10 +4,10 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
 interface LendBorrowData {
-  usneDile: number;      // Lent out
-  usnePrtAle: number;    // Borrowed
-  usneGhetle: number;    // Received back
-  usnePrtDile: number;   // Paid back
+  moneyLent: number;
+  lentRepaymentReceived: number;
+  moneyBorrowed: number;
+  borrowedRepayment: number;
 }
 
 interface LendBorrowOverviewProps {
@@ -19,9 +19,9 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
   
   const cards = [
     {
-      title: "Usne Dile",
+      title: "Money Lent",
       subtitle: "Lent Out",
-      amount: data.usneDile,
+      amount: data.moneyLent,
       icon: ArrowUp,
       direction: "up",
       color: "text-lending",
@@ -30,9 +30,9 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
       emoji: "💸"
     },
     {
-      title: "Usne Prt Ale",
-      subtitle: "Borrowed",
-      amount: data.usnePrtAle,
+      title: "Lent Repayment Received",
+      subtitle: "Received Back",
+      amount: data.lentRepaymentReceived,
       icon: ArrowDown,
       direction: "down",
       color: "text-warning",
@@ -41,9 +41,9 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
       emoji: "💰"
     },
     {
-      title: "Usne Ghetle",
-      subtitle: "Received Back",
-      amount: data.usneGhetle,
+      title: "Money Borrowed",
+      subtitle: "Borrowed",
+      amount: data.moneyBorrowed,
       icon: ArrowDown,
       direction: "down",
       color: "text-success",
@@ -52,9 +52,9 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
       emoji: "✅"
     },
     {
-      title: "Usne Prt Dile",
+      title: "Borrowed Repayment",
       subtitle: "Paid Back",
-      amount: data.usnePrtDile,
+      amount: data.borrowedRepayment,
       icon: ArrowUp,
       direction: "up",
       color: "text-expense",
@@ -113,7 +113,7 @@ export function LendBorrowOverview({ data }: LendBorrowOverviewProps) {
               </div>
 
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 h-8 flex items-center text-left">
                   {card.title}
                 </p>
                 <p className="text-xs text-muted-foreground/80 mb-2">

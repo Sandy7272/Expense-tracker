@@ -1,3 +1,7 @@
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,13 +11,14 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useSettings } from "@/hooks/useSettings";
 import { useGoogleSheetsSync } from "@/hooks/useGoogleSheetsSync";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
-import { 
-  Settings as SettingsIcon, 
-  User, 
+import {
+  Settings as SettingsIcon,
+  User,
   Database, 
   Bell, 
   Shield, 
@@ -30,19 +35,54 @@ import {
   Trash2
 } from "lucide-react";
 
+const SettingsSchema = z.object({
+  sheet_url: z.string()
+    .url({ message: "Please enter a valid URL." })
+    .regex(new RegExp('^https://docs.google.com/spreadsheets/d/'), { message: "URL must be a valid Google Sheets link." }),
+  auto_sync: z.boolean(),
+  currency: z.string(),
+  language: z.string(),
+  theme: z.string(),
+});
+
+type SettingsFormValues = z.infer<typeof SettingsSchema>;
+
 export default function Settings() {
   const { settings, updateSettings } = useSettings();
-  const { 
-    authenticate, 
-    syncData, 
-    testConnection, 
-    isAuthenticating, 
+  const {
+    authenticate,
+    syncData,
+    testConnection,
+    isAuthenticating,
     isSyncing,
-    isTesting 
+    isTesting
   } = useGoogleSheetsSync();
   const { theme, setTheme } = useTheme();
 
-  const handleSettingChange = (key: string, value: any) => {
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(SettingsSchema),
+    defaultValues: {
+      sheet_url: '',
+      auto_sync: false,
+      currency: 'INR',
+      language: 'en',
+      theme: 'light',
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        sheet_url: settings.sheet_url || '',
+        auto_sync: settings.auto_sync || false,
+        currency: settings.currency || 'INR',
+        language: settings.language || 'en',
+        theme: settings.theme || 'light',
+      });
+    }
+  }, [settings, form]);
+
+  const handleSettingChange = (key: keyof SettingsFormValues, value: any) => {
     updateSettings.mutate({ [key]: value });
   };
 
@@ -162,53 +202,68 @@ export default function Settings() {
 
             <Separator />
 
-            {/* Auto Sync Setting */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Auto Sync</h4>
-                <p className="text-sm text-muted-foreground">Automatically sync data every 5 minutes</p>
-              </div>
-              <Switch 
-                checked={settings?.auto_sync || false}
-                onCheckedChange={(checked) => handleSettingChange('auto_sync', checked)}
-              />
-            </div>
-            
-            <Separator />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((data) => updateSettings.mutate(data))} className="space-y-4">
+                {/* Auto Sync Setting */}
+                <FormField
+                  control={form.control}
+                  name="auto_sync"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Auto Sync</FormLabel>
+                        <p className="text-sm text-muted-foreground">Automatically sync data every 5 minutes</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <Separator />
 
-            {/* Sheet URL */}
-            <div className="space-y-2">
-              <Label>Google Sheets URL</Label>
-              <Input 
-                placeholder="https://docs.google.com/spreadsheets/d/..." 
-                value={settings?.sheet_url || ''}
-                onChange={(e) => handleSettingChange('sheet_url', e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Make sure your sheet has columns: Date, Type, Category, Description, Amount, Person
-              </p>
-            </div>
+                {/* Sheet URL */}
+                <FormField
+                  control={form.control}
+                  name="sheet_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Google Sheets URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://docs.google.com/spreadsheets/d/..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Make sure your sheet has columns: Date, Type, Category, Description, Amount, Person
+                      </p>
+                    </FormItem>
+                  )}
+                />
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={() => testConnection.mutate(settings?.sheet_url || '')}
-                disabled={!settings?.sheet_url || isTesting}
-              >
-                <RefreshCw className={`h-4 w-4 ${isTesting ? 'animate-spin' : ''}`} />
-                {isTesting ? 'Testing...' : 'Test Connection'}
-              </Button>
-              <Button 
-                onClick={() => syncData.mutate(settings?.sheet_url)}
-                disabled={settings?.google_auth_status !== 'connected' || !settings?.sheet_url || isSyncing}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? 'Syncing...' : 'Sync Now'}
-              </Button>
-            </div>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => testConnection.mutate(form.getValues('sheet_url'))}
+                    disabled={!form.watch('sheet_url') || isTesting}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isTesting ? 'animate-spin' : ''}`} />
+                    {isTesting ? 'Testing...' : 'Test Connection'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={settings?.google_auth_status !== 'connected' || !form.watch('sheet_url') || isSyncing}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync Now'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
 
             {/* Sync Status */}
             {settings?.last_synced && (

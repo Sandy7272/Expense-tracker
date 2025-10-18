@@ -30,7 +30,7 @@ export interface CreateLendingTransactionData {
   related_transaction_id?: string;
 }
 
-export const useLendingTransactions = () => {
+export const useLendingTransactions = (personFilter?: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { dateRange } = useGlobalDateRange();
@@ -41,17 +41,22 @@ export const useLendingTransactions = () => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ['lending-transactions', user?.id, dateRange],
+    queryKey: ['lending-transactions', user?.id, dateRange, personFilter],
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('lending_transactions')
         .select('*')
         .eq('user_id', user.id)
         .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
-        .lte('date', format(dateRange.to, 'yyyy-MM-dd'))
-        .order('date', { ascending: false });
+        .lte('date', format(dateRange.to, 'yyyy-MM-dd'));
+
+      if (personFilter) {
+        query = query.eq('person_name', personFilter);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
 
       if (error) throw error;
       return data as LendingTransaction[];
@@ -77,11 +82,14 @@ export const useLendingTransactions = () => {
       return data as LendingTransaction;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
       toast({
         title: 'Transaction Added',
         description: 'Lending transaction has been recorded successfully.',
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unique-lending-persons'] });
     },
     onError: (error) => {
       toast({
@@ -152,6 +160,27 @@ export const useLendingTransactions = () => {
     },
   });
 
+
+  // Fetch unique person names
+  const { data: uniquePersons = [], isLoading: isLoadingPersons } = useQuery({
+    queryKey: ['unique-lending-persons', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('lending_transactions')
+        .select('person_name')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching unique persons:', error);
+        return [];
+      }
+      const persons = data.map((row) => row.person_name);
+      return Array.from(new Set(persons));
+    },
+    enabled: !!user?.id,
+  });
+
   return {
     transactions,
     isLoading,
@@ -159,5 +188,7 @@ export const useLendingTransactions = () => {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    uniquePersons,
+    isLoadingPersons,
   };
 };

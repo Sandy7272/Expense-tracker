@@ -10,8 +10,30 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+const sanitizeCell = (cell: string): string => {
+ if (!cell) return '';
+ let sanitized = cell.trim();
+
+ // Prevent formula injection in spreadsheets
+ if (['=', '+', '-', '@', '\t', '\r'].includes(sanitized.charAt(0))) {
+   sanitized = `'` + sanitized;
+ }
+
+ // Basic XSS prevention by stripping HTML-like tags
+ sanitized = sanitized.replace(/<[^>]*>?/gm, '');
+
+ return sanitized;
+};
+
 interface CsvRow {
-  [key: string]: string;
+ [key: string]: string;
 }
 
 interface MappedTransaction {
@@ -60,7 +82,7 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
     
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
     const data = lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const values = line.split(',').map(v => sanitizeCell(v.replace(/"/g, '')));
       const row: CsvRow = {};
       headers.forEach((header, index) => {
         row[header] = values[index] || '';
@@ -72,10 +94,21 @@ export function CsvImporter({ onImport, onClose }: CsvImporterProps) {
   }, []);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.csv')) {
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        title: "File Too Large",
+        description: `Please upload a file smaller than ${MAX_FILE_SIZE_MB}MB`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!file.type.startsWith('text/csv')) {
       toast({
         title: "Invalid File Type",
-        description: "Please upload a CSV file",
+        description: "Please upload a valid CSV file",
         variant: "destructive",
       });
       return;

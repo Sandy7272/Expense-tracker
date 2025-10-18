@@ -23,14 +23,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Lending() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [txToDelete, setTxToDelete] = useState<LendingTransaction | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [personFilter, setPersonFilter] = useState<string | null>(null);
   const { dateRange, formatDateRange } = useDateRangeFilter();
-  const { transactions, isLoading, deleteTransaction } = useLendingTransactions(dateRange);
+  const { transactions, isLoading, deleteTransaction, uniquePersons, isLoadingPersons } = useLendingTransactions(personFilter);
 
   // Process lending transactions for overview
   const lendBorrowData = useMemo(() => {
@@ -40,10 +48,10 @@ export default function Lending() {
     const repaidByMe = transactions.filter(t => t.type === 'repaid_by_me').reduce((sum, t) => sum + Number(t.amount), 0);
     
     return {
-      usneDile: lent - repaidByThem,
-      usnePrtAle: repaidByThem,
-      usneGhetle: borrowed - repaidByMe,
-      usnePrtDile: repaidByMe
+      moneyLent: lent,
+      lentRepaymentReceived: repaidByThem,
+      moneyBorrowed: borrowed,
+      borrowedRepayment: repaidByMe
     };
   }, [transactions]);
 
@@ -96,7 +104,7 @@ export default function Lending() {
       activeLends,
       activeBorrows,
       overdueLends,
-      pendingRepayment: lendBorrowData.usneGhetle
+      pendingRepayment: lendBorrowData.moneyBorrowed - lendBorrowData.borrowedRepayment
     };
   }, [transactions, lendBorrowData]);
 
@@ -117,10 +125,10 @@ export default function Lending() {
 
   const getTransactionTypeLabel = (type: string) => {
     switch (type) {
-      case "lent": return "Usne Dile";
-      case "borrowed": return "Usne Ghetle";
-      case "repaid_by_me": return "Usne Prt Dile";
-      case "repaid_by_them": return "Usne Prt Ale";
+      case "lent": return "Money Lent";
+      case "borrowed": return "Money Borrowed";
+      case "repaid_by_me": return "Borrowed Repayment";
+      case "repaid_by_them": return "Lent Repayment Received";
       default: return type;
     }
   };
@@ -160,10 +168,29 @@ export default function Lending() {
             <h1 className="text-3xl font-heading font-bold text-foreground">Lending & Borrowing</h1>
             <p className="text-muted-foreground">Track money lent to and borrowed from friends & family ({formatDateRange(dateRange)})</p>
           </div>
-          <Button className="cyber-button" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Transaction
-          </Button>
+          <div className="flex items-center gap-4">
+            <Select
+              onValueChange={(value) => setPersonFilter(value === "all" ? null : value)}
+              value={personFilter || "all"}
+              disabled={isLoadingPersons}
+            >
+              <SelectTrigger className="w-[180px] input-professional">
+                <SelectValue placeholder="Filter by Person" />
+              </SelectTrigger>
+              <SelectContent className="z-[60]">
+                <SelectItem value="all">All Persons</SelectItem>
+                {(uniquePersons || []).map((person) => (
+                  <SelectItem key={person} value={person}>
+                    {person}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button className="cyber-button" onClick={() => setIsModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Button>
+          </div>
         </div>
 
         {/* Overview Cards */}

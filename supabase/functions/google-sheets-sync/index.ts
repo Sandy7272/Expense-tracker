@@ -1,5 +1,9 @@
+// @ts-ignore
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// @ts-ignore
+import { create, verify } from 'https://deno.land/x/djwt@v2.2/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +20,17 @@ interface Transaction {
   category: string
   description: string
   date: string
-  person?: string
+  person?: string | null
   source: string
 }
 
-serve(async (req) => {
+interface GoogleTokens {
+  access_token: string;
+  refresh_token?: string;
+  expires_at: string;
+}
+
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -28,7 +38,9 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(
+      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
@@ -51,15 +63,24 @@ serve(async (req) => {
 
     if (action === 'authenticate') {
       // OAuth flow initiation
+      // @ts-ignore
       const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID')
-      const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-sheets-sync`
+      // @ts-ignore
+      const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-sheets-sync?action=oauth_callback`
+      // @ts-ignore
+      const jwtSecret = Deno.env.get('JWT_SECRET')
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not set in environment variables')
+      }
+      
+      const state = await create({ alg: 'HS256', typ: 'JWT' }, { user_id: user.id, exp: Math.floor(Date.now() / 1000) + (60 * 10) }, jwtSecret) // 10 minute expiry
       
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${googleClientId}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${encodeURIComponent('https://www.googleapis.com/auth/spreadsheets.readonly')}&` +
         `response_type=code&` +
-        `state=${user.id}&` +
+        `state=${state}&` +
         `access_type=offline&` +
         `prompt=consent`
 
@@ -72,30 +93,33 @@ serve(async (req) => {
     if (action === 'sync') {
       console.log('🔄 Starting Google Sheets sync for user:', user.id)
 
-      // Get user's Google tokens securely from vault
-      const tokenResponse = await supabase.functions.invoke('secure-google-tokens', {
-        body: { action: 'retrieve' },
-        headers: {
-          Authorization: authHeader
-        }
-      })
-
-      if (tokenResponse.error || !tokenResponse.data?.tokens) {
-        throw new Error('No Google tokens found. Please authenticate first.')
-      }
-
-      const tokens = tokenResponse.data.tokens
-      
-      // Get sheet URL from settings
-      const { data: settings } = await supabase
+      // Get sheet URL and vault ID from settings
+      const { data: settings, error: settingsError } = await supabase
         .from('user_settings')
-        .select('sheet_url, google_auth_status')
+        .select('sheet_url, google_auth_status, google_token_vault_id')
         .eq('user_id', user.id)
         .single()
 
-      if (settings?.google_auth_status !== 'connected') {
-        throw new Error(`Google authentication required. Status: ${settings?.google_auth_status || 'unknown'}`)
+      if (settingsError || !settings) {
+        throw new Error('Could not retrieve user settings')
       }
+      
+      if (settings.google_auth_status !== 'connected' || !settings.google_token_vault_id) {
+        throw new Error(`Google authentication required. Status: ${settings.google_auth_status || 'unknown'}`)
+      }
+
+      // Retrieve tokens from vault
+      const { data: vaultData, error: vaultError } = await supabase
+        .from('vault.decrypted_secrets')
+        .select('decrypted_secret')
+        .eq('id', settings.google_token_vault_id)
+        .single()
+
+      if (vaultError || !vaultData) {
+        throw new Error('Failed to retrieve tokens from secure storage')
+      }
+
+      let tokens: GoogleTokens = JSON.parse(vaultData.decrypted_secret)
 
       const actualSheetUrl = sheetUrl || settings.sheet_url
       if (!actualSheetUrl) {
@@ -112,19 +136,49 @@ serve(async (req) => {
       // Check if token needs refresh
       let accessToken = tokens.access_token
       if (tokens.expires_at && new Date() > new Date(tokens.expires_at)) {
-        console.log('🔄 Refreshing Google access token')
-        const refreshResponse = await supabase.functions.invoke('secure-google-tokens', {
-          body: { action: 'refresh' },
-          headers: {
-            Authorization: authHeader
+        console.log('🔄 Refreshing Google access token for user:', user.id)
+        
+        if (!tokens.refresh_token) {
+          throw new Error('No refresh token available. Please re-authenticate.')
+        }
+
+        const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            refresh_token: tokens.refresh_token,
+            // @ts-ignore
+            client_id: Deno.env.get('GOOGLE_CLIENT_ID') ?? '',
+            // @ts-ignore
+            client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') ?? '',
+            grant_type: 'refresh_token',
+          }),
+        })
+
+        const refreshData = await refreshResponse.json()
+
+        if (refreshData.error) {
+          await supabase.from('user_settings').update({ google_auth_status: 'expired' }).eq('user_id', user.id)
+          throw new Error(`Token refresh failed: ${refreshData.error_description}`)
+        }
+
+        const newTokens: GoogleTokens = {
+          access_token: refreshData.access_token,
+          refresh_token: refreshData.refresh_token || tokens.refresh_token,
+          expires_at: new Date(Date.now() + (refreshData.expires_in * 1000)).toISOString(),
+        }
+
+        // Update the vault with the new tokens
+        await supabase.functions.invoke('secure-google-tokens', {
+          body: {
+            action: 'store',
+            tokens: newTokens,
+            user_id: user.id
           }
         })
 
-        if (refreshResponse.error) {
-          throw new Error('Failed to refresh Google tokens. Please re-authenticate.')
-        }
-
-        accessToken = refreshResponse.data.tokens.access_token
+        accessToken = newTokens.access_token
+        tokens = newTokens
       }
 
       // Fetch data from Google Sheets
@@ -182,7 +236,7 @@ serve(async (req) => {
             transactions.push(transaction)
           }
         } catch (error) {
-          console.error('Error parsing row:', row, error)
+          console.error('Error parsing row:', row, error as Error)
         }
       }
 
@@ -196,11 +250,11 @@ serve(async (req) => {
 
       // Smart duplicate detection
       const newTransactions = transactions.filter(newTx => {
-        const isDuplicate = existingTransactions?.some(existingTx => 
+        const isDuplicate = existingTransactions?.some((existingTx: { date: string; amount: number; category: string; description: string | null }) =>
           existingTx.date === newTx.date &&
           Math.abs(existingTx.amount - newTx.amount) < 0.01 &&
           existingTx.category === newTx.category &&
-          (existingTx.description === newTx.description || 
+          (existingTx.description === newTx.description ||
            (!existingTx.description && !newTx.description))
         )
         return !isDuplicate
@@ -251,11 +305,27 @@ serve(async (req) => {
       // Handle OAuth callback
       const url = new URL(req.url)
       const code = url.searchParams.get('code')
-      const state = url.searchParams.get('state') // This is the user ID
+      const state = url.searchParams.get('state')
       
       if (!code || !state) {
         throw new Error('Missing OAuth parameters')
       }
+
+      // Verify the state parameter (JWT)
+      // @ts-ignore
+      const jwtSecret = Deno.env.get('JWT_SECRET')
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not set in environment variables')
+      }
+      
+      let payload
+      try {
+        payload = await verify(state, jwtSecret, 'HS256')
+      } catch (error) {
+        throw new Error('Invalid or expired state token')
+      }
+
+      const userId = payload.user_id as string
 
       // Exchange code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -265,9 +335,12 @@ serve(async (req) => {
         },
         body: new URLSearchParams({
           code,
+          // @ts-ignore
           client_id: Deno.env.get('GOOGLE_CLIENT_ID') ?? '',
+          // @ts-ignore
           client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') ?? '',
-          redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-sheets-sync`,
+          // @ts-ignore
+          redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-sheets-sync?action=oauth_callback`,
           grant_type: 'authorization_code',
         }),
       })
@@ -289,9 +362,9 @@ serve(async (req) => {
             refresh_token: tokens.refresh_token,
             expires_at: expiresAt.toISOString()
           },
-          user_id: state
-        }
-      })
+         user_id: userId
+       }
+     })
 
       if (storeResponse.error) {
         console.error('Failed to store tokens securely:', storeResponse.error)
@@ -314,12 +387,12 @@ serve(async (req) => {
       status: 400,
     })
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in google-sheets-sync function:', error)
     
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
-      details: error.toString()
+    return new Response(JSON.stringify({
+      error: (error as Error).message || 'Internal server error',
+      details: (error as Error).toString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

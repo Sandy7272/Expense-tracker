@@ -125,14 +125,6 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
             </Button>
           </div>
           
-          <div className="glass-card glow-primary p-4 border border-primary/30">
-            <p className="text-xs text-primary font-medium">
-              🚀 Live Google Sheets Sync
-            </p>
-            <p className="text-xs text-foreground/60 mt-1">
-              Real-time cyberpunk analytics
-            </p>
-          </div>
         </div>
       </div>
 

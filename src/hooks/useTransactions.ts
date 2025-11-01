@@ -32,6 +32,7 @@ export interface CreateTransactionData {
   date: string;
   loan_id?: string;
   status?: 'completed' | 'pending' | 'received';
+  source?: string;
 }
 
 export function useTransactions() {

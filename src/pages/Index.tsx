@@ -9,6 +9,7 @@ import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
 import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
 import { EMITrackingCard } from "@/components/dashboard/EMITrackingCard";
+import { BankStatementUpload } from "@/components/dashboard/BankStatementUpload";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDateRangeFilter, DateRange } from "@/hooks/useDateRangeFilter";
 import { useInvestmentData } from "@/hooks/useInvestmentData";
@@ -131,6 +132,8 @@ export default function Index() {
         </div>
 
         <FinancialSummaryCards {...financialData} />
+        
+        <BankStatementUpload />
         
         <EMITrackingCard />
         

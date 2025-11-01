@@ -48,3 +48,6 @@ value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im
 
 [functions.google-sheets-sync]
 verify_jwt = false
+
+[functions.categorize-transactions]
+verify_jwt = true

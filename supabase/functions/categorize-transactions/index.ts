@@ -66,9 +66,21 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error in categorize-transactions:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Log full details server-side
+    console.error("categorize-transactions error:", {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return sanitized error to client
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), 
+      JSON.stringify({ 
+        message: "Unable to process transactions. Please try again.",
+        code: "PROCESSING_ERROR"
+      }), 
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

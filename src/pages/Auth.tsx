@@ -51,9 +51,14 @@ export default function Auth() {
     setLoading(true);
     setError(null);
 
+    const redirectUrl = `${window.location.origin}/dashboard`;
+
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
     });
 
     if (error) {

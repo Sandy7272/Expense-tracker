@@ -154,11 +154,19 @@ serve(async (req: Request) => {
     })
 
   } catch (error: unknown) {
-    console.error('Error in secure-google-tokens function:', error)
+    const errorMessage = (error as Error).message || 'Unknown error'
     
+    // Log full details server-side
+    console.error('secure-google-tokens error:', {
+      message: errorMessage,
+      stack: (error as Error).stack,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Return sanitized error to client
     return new Response(JSON.stringify({
-      error: (error as Error).message || 'Internal server error',
-      details: (error as Error).toString()
+      message: 'Unable to process token request. Please try again.',
+      code: 'TOKEN_ERROR'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

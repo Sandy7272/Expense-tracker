@@ -108,18 +108,15 @@ serve(async (req: Request) => {
         throw new Error(`Google authentication required. Status: ${settings.google_auth_status || 'unknown'}`)
       }
 
-      // Retrieve tokens from vault
-      const { data: vaultData, error: vaultError } = await supabase
-        .from('vault.decrypted_secrets')
-        .select('decrypted_secret')
-        .eq('id', settings.google_token_vault_id)
-        .single()
+      // Retrieve tokens using secure function
+      const { data: tokensData, error: tokensError } = await supabase
+        .rpc('get_google_tokens', { _user_id: user.id })
 
-      if (vaultError || !vaultData) {
-        throw new Error('Failed to retrieve tokens from secure storage')
+      if (tokensError || !tokensData) {
+        throw new Error('AUTH_REQUIRED')
       }
 
-      let tokens: GoogleTokens = JSON.parse(vaultData.decrypted_secret)
+      let tokens: GoogleTokens = tokensData
 
       const actualSheetUrl = sheetUrl || settings.sheet_url
       if (!actualSheetUrl) {
@@ -388,12 +385,39 @@ serve(async (req: Request) => {
     })
 
   } catch (error: unknown) {
-    console.error('Error in google-sheets-sync function:', error)
+    const errorMessage = (error as Error).message || 'Unknown error'
     
-    return new Response(JSON.stringify({
-      error: (error as Error).message || 'Internal server error',
-      details: (error as Error).toString()
-    }), {
+    // Log full details server-side
+    console.error('google-sheets-sync error:', {
+      message: errorMessage,
+      stack: (error as Error).stack,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Return sanitized error to client
+    let publicError = { 
+      message: 'An error occurred. Please try again or contact support.',
+      code: 'UNKNOWN_ERROR' 
+    }
+    
+    if (errorMessage.includes('AUTH_REQUIRED') || errorMessage.includes('auth') || errorMessage.includes('token')) {
+      publicError = {
+        message: 'Unable to access your data. Please reconnect your Google account.',
+        code: 'ACCESS_ERROR'
+      }
+    } else if (errorMessage.includes('Google') || errorMessage.includes('OAuth')) {
+      publicError = {
+        message: 'Google Sheets connection failed. Please try again.',
+        code: 'SYNC_ERROR'
+      }
+    } else if (errorMessage.includes('Missing OAuth')) {
+      publicError = {
+        message: 'OAuth flow incomplete. Please try again.',
+        code: 'OAUTH_ERROR'
+      }
+    }
+    
+    return new Response(JSON.stringify(publicError), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

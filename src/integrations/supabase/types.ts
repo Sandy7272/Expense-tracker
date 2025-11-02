@@ -380,7 +380,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_google_tokens: { Args: { _user_id: string }; Returns: Json }
     }
     Enums: {
       transaction_status: "pending" | "completed" | "received"

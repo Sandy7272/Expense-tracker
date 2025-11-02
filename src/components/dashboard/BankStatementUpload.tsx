@@ -55,16 +55,25 @@ export function BankStatementUpload() {
       // Parse the file
       let parsedTransactions: ParsedTransaction[] = [];
       
-      if (file.type === 'text/csv') {
-        parsedTransactions = await parseCSV(file);
-      } else if (file.type.includes('spreadsheet') || file.type.includes('excel')) {
-        parsedTransactions = await parseExcel(file);
-      } else if (file.type === 'application/pdf') {
-        parsedTransactions = await parsePDF(file);
+      try {
+        if (file.type === 'text/csv') {
+          parsedTransactions = await parseCSV(file);
+        } else if (file.type.includes('spreadsheet') || file.type.includes('excel')) {
+          parsedTransactions = await parseExcel(file);
+        } else if (file.type === 'application/pdf') {
+          parsedTransactions = await parsePDF(file);
+        }
+      } catch (parseError) {
+        console.error('Parsing error:', parseError);
+        throw new Error(
+          parseError instanceof Error 
+            ? parseError.message 
+            : 'Failed to parse file. Please ensure it is a valid bank statement in CSV, Excel, or PDF format.'
+        );
       }
 
       if (parsedTransactions.length === 0) {
-        throw new Error('No transactions found in the file. Please check the format.');
+        throw new Error('No transactions found in the file. Please check the format or try a different file type (CSV/Excel recommended for best results).');
       }
 
       toast({

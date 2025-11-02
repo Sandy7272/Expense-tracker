@@ -11,16 +11,35 @@ serve(async (req) => {
   }
 
   try {
-    const { transactions } = await req.json();
+    const { transactions, mode = 'categorize' } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`Processing ${transactions.length} transactions for categorization`);
+    console.log(`Processing ${transactions.length} transactions for ${mode}`);
 
-    const systemPrompt = `You are a financial transaction categorization expert. Categorize transactions into one of these categories:
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (mode === 'extract') {
+      // AI-powered extraction from raw text
+      systemPrompt = `You are a bank statement parser. Extract transaction data from bank statement text.
+Return ONLY a JSON array with this exact format:
+[{
+  "date": "YYYY-MM-DD",
+  "description": "transaction description",
+  "amount": 1000.50,
+  "type": "income" or "expense"
+}]
+
+Be precise and return valid JSON only. Ignore headers, footers, and non-transaction lines.`;
+      
+      userPrompt = `Extract transactions from this bank statement:\n${transactions[0].rawText}`;
+    } else {
+      // Standard categorization
+      systemPrompt = `You are a financial transaction categorization expert. Categorize transactions into one of these categories:
 - Food (restaurants, groceries, food delivery)
 - Travel (fuel, petrol, transport, flights, hotels)
 - EMI (loan payments, EMI, installments)
@@ -39,9 +58,10 @@ Return ONLY a JSON array with this exact format:
 
 Be precise and return valid JSON only.`;
 
-    const userPrompt = `Categorize these transactions:\n${transactions.map((t: any, i: number) => 
-      `${i + 1}. ${t.description} - Amount: ${t.amount}`
-    ).join('\n')}`;
+      userPrompt = `Categorize these transactions:\n${transactions.map((t: any, i: number) => 
+        `${i + 1}. ${t.description} - Amount: ${t.amount}`
+      ).join('\n')}`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

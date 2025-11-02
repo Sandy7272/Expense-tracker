@@ -1,6 +1,5 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import pdfParse from 'pdf-parse';
 
 export interface ParsedTransaction {
   date: string;
@@ -52,22 +51,9 @@ export async function parseExcel(file: File): Promise<ParsedTransaction[]> {
 }
 
 export async function parsePDF(file: File): Promise<ParsedTransaction[]> {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const data = await pdfParse(Buffer.from(arrayBuffer));
-    
-    console.log('PDF parsed, extracting transactions from text...');
-    const transactions = extractTransactionsFromText(data.text);
-    
-    if (transactions.length === 0) {
-      throw new Error('No transactions found. PDF may not be a bank statement or format is unsupported.');
-    }
-    
-    return transactions;
-  } catch (error) {
-    console.error('PDF parsing error:', error);
-    throw new Error('Failed to parse PDF. Please try converting to CSV or Excel format.');
-  }
+  // PDF parsing is done server-side in the edge function
+  // This function just prepares the file for upload
+  throw new Error('PDF parsing is handled by the server. Please use the edge function directly.');
 }
 
 function normalizeTransactions(data: any[]): ParsedTransaction[] {
@@ -148,61 +134,4 @@ function normalizeDate(dateStr: string): string {
   }
 }
 
-function extractTransactionsFromText(text: string): ParsedTransaction[] {
-  const transactions: ParsedTransaction[] = [];
-  const lines = text.split('\n');
-  
-  // Multiple patterns for different bank formats
-  const patterns = [
-    // Pattern 1: DD/MM/YYYY Description Amount (Debit/Credit)
-    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)\s*(Dr|Cr|Debit|Credit)?/i,
-    // Pattern 2: Date Description Withdrawal Deposit
-    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+(?:Withdrawal|Debit)?\s*([\d,]+\.?\d*)?\s+(?:Deposit|Credit)?\s*([\d,]+\.?\d*)?/i,
-    // Pattern 3: Compact format with amounts
-    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+([\d,]+\.?\d*)/i
-  ];
-  
-  for (const line of lines) {
-    // Skip header lines
-    if (line.match(/Date|Transaction|Particulars|Description|Balance|Opening|Closing/i)) {
-      continue;
-    }
-    
-    for (const pattern of patterns) {
-      const match = line.match(pattern);
-      if (match) {
-        const date = match[1];
-        const description = match[2]?.trim();
-        
-        // Handle different amount formats
-        let amount = 0;
-        let type: 'income' | 'expense' = 'expense';
-        
-        if (match[4] && !match[3]) {
-          // Deposit/Credit column
-          amount = parseFloat((match[4] || '0').replace(/,/g, ''));
-          type = 'income';
-        } else if (match[3]) {
-          amount = parseFloat((match[3] || '0').replace(/,/g, ''));
-          // Check if Cr/Credit indicator
-          const indicator = match[4]?.toLowerCase();
-          type = (indicator === 'cr' || indicator === 'credit') ? 'income' : 'expense';
-        }
-        
-        if (amount > 0 && description && description.length > 3) {
-          transactions.push({
-            date: normalizeDate(date),
-            description: description.substring(0, 200), // Limit description length
-            amount,
-            type,
-            confidence: 0.6 // Medium confidence for PDF extraction
-          });
-          break; // Found match, try next line
-        }
-      }
-    }
-  }
-  
-  console.log(`Extracted ${transactions.length} transactions from PDF`);
-  return transactions;
-}
+// Removed extractTransactionsFromText - now handled server-side

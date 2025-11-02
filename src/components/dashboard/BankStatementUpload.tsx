@@ -55,25 +55,50 @@ export function BankStatementUpload() {
       // Parse the file
       let parsedTransactions: ParsedTransaction[] = [];
       
-      try {
-        if (file.type === 'text/csv') {
-          parsedTransactions = await parseCSV(file);
-        } else if (file.type.includes('spreadsheet') || file.type.includes('excel')) {
-          parsedTransactions = await parseExcel(file);
-        } else if (file.type === 'application/pdf') {
-          parsedTransactions = await parsePDF(file);
+      if (file.type === 'application/pdf') {
+        // PDF files are parsed server-side
+        setStatus('categorizing');
+        
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        const base64File = await base64Promise;
+        
+        const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
+          body: { 
+            mode: 'parse-pdf',
+            pdfFile: base64File 
+          }
+        });
+
+        if (functionError) throw functionError;
+        if (data.error) throw new Error(data.error);
+        
+        parsedTransactions = data.transactions || [];
+      } else {
+        // CSV and Excel are parsed client-side
+        try {
+          if (file.type === 'text/csv') {
+            parsedTransactions = await parseCSV(file);
+          } else if (file.type.includes('spreadsheet') || file.type.includes('excel')) {
+            parsedTransactions = await parseExcel(file);
+          }
+        } catch (parseError) {
+          console.error('Parsing error:', parseError);
+          throw new Error(
+            parseError instanceof Error 
+              ? parseError.message 
+              : 'Failed to parse file. Please ensure it is a valid bank statement.'
+          );
         }
-      } catch (parseError) {
-        console.error('Parsing error:', parseError);
-        throw new Error(
-          parseError instanceof Error 
-            ? parseError.message 
-            : 'Failed to parse file. Please ensure it is a valid bank statement in CSV, Excel, or PDF format.'
-        );
       }
 
       if (parsedTransactions.length === 0) {
-        throw new Error('No transactions found in the file. Please check the format or try a different file type (CSV/Excel recommended for best results).');
+        throw new Error('No transactions found in the file. Please check the format or try CSV/Excel for best results.');
       }
 
       toast({
@@ -81,27 +106,30 @@ export function BankStatementUpload() {
         description: `Found ${parsedTransactions.length} transactions. Categorizing with AI...`
       });
 
-      // Categorize with AI
-      setStatus('categorizing');
-      
-      const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
-        body: { transactions: parsedTransactions }
-      });
+      // Categorize with AI (skip if already done during PDF parsing)
+      if (file.type !== 'application/pdf') {
+        setStatus('categorizing');
+        
+        const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
+          body: { transactions: parsedTransactions }
+        });
 
-      if (functionError) throw functionError;
+        if (functionError) throw functionError;
+        if (data.error) throw new Error(data.error);
 
-      if (data.error) {
-        throw new Error(data.error);
+        // Combine parsed transactions with AI categorizations
+        const categorized: CategorizedTransaction[] = parsedTransactions.map((t, i) => ({
+          ...t,
+          category: data.categorizations[i]?.category || 'Other',
+          confidence: data.categorizations[i]?.confidence || 0.5
+        }));
+
+        setTransactions(categorized);
+      } else {
+        // PDF already returned categorized transactions
+        setTransactions(parsedTransactions as CategorizedTransaction[]);
       }
 
-      // Combine parsed transactions with AI categorizations
-      const categorized: CategorizedTransaction[] = parsedTransactions.map((t, i) => ({
-        ...t,
-        category: data.categorizations[i]?.category || 'Other',
-        confidence: data.categorizations[i]?.confidence || 0.5
-      }));
-
-      setTransactions(categorized);
       setStatus('preview');
 
       toast({

@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, DollarSign } from 'lucide-react';
+import { Loader2, DollarSign, CheckCircle2, Lock, Shield, Zap } from 'lucide-react';
 
 const AuthSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -116,125 +116,168 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
-      <Card className="w-full max-w-md glass-card border-white/20">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/20">
-              <DollarSign className="h-6 w-6 text-primary" />
+      <Card className="w-full max-w-4xl glass-card border-white/20">
+        <CardContent className="p-8 md:p-12">
+          <div className="md:grid md:grid-cols-2 md:gap-8">
+            {/* Left Column - Value Proposition */}
+            <div className="hidden md:flex md:flex-col md:justify-center md:space-y-6 md:pr-8 md:border-r md:border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/20">
+                  <DollarSign className="h-6 w-6 text-primary" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Expense Tracker
+                </span>
+              </div>
+              
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold leading-tight">
+                  The Easiest Way to Manage Your Money
+                </h2>
+                <p className="text-muted-foreground">
+                  Take control of your finances with powerful tracking, insights, and complete privacy.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { icon: CheckCircle2, label: "100% Free Forever", description: "No hidden costs or premium plans" },
+                  { icon: Lock, label: "Secure & Private", description: "Your data is encrypted and protected" },
+                  { icon: Shield, label: "Cloud Backup", description: "Never lose your financial data" },
+                  { icon: Zap, label: "Real-time Insights", description: "Instant analytics and reports" }
+                ].map((benefit, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 mt-0.5">
+                      <benefit.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">{benefit.label}</p>
+                      <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Column - Auth Forms */}
+            <div className="md:pl-8">
+              <div className="md:hidden text-center mb-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-white/20">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Expense Tracker
+                </h1>
+              </div>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 glass-card mb-6">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <TabsContent value="signin">
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="Enter your email" {...field} className="glass-card border-white/20" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter your password" {...field} className="glass-card border-white/20" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="signup">
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="Enter your email" {...field} className="glass-card border-white/20" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Create a password" {...field} className="glass-card border-white/20" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {error && (
+                      <Alert className="border-destructive/50 text-destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full cyber-button"
+                      disabled={loading}
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+                    </Button>
+                  </form>
+                </Form>
+                
+                {activeTab === 'signin' && (
+                  <p className="text-center text-sm text-muted-foreground mt-4">
+                    Need an account?{" "}
+                    <Button variant="link" className="p-0" onClick={() => setActiveTab("signup")}>
+                      Sign Up
+                    </Button>
+                  </p>
+                )}
+                {activeTab === 'signup' && (
+                  <p className="text-center text-sm text-muted-foreground mt-4">
+                    Already have an account?{" "}
+                    <Button variant="link" className="p-0" onClick={() => setActiveTab("signin")}>
+                      Sign In
+                    </Button>
+                  </p>
+                )}
+              </Tabs>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Expense Tracker
-          </CardTitle>
-          <CardDescription>
-            {activeTab === "signin" ? "Sign in to your account" : "Create a new account"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 glass-card">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-                <TabsContent value="signin">
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="Enter your email" {...field} className="glass-card border-white/20" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Enter your password" {...field} className="glass-card border-white/20" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="signup">
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="Enter your email" {...field} className="glass-card border-white/20" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Create a password" {...field} className="glass-card border-white/20" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </TabsContent>
-
-                {error && (
-                  <Alert className="border-destructive/50 text-destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full cyber-button"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
-                </Button>
-              </form>
-            </Form>
-            
-            {activeTab === 'signin' && (
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Need an account?{" "}
-                <Button variant="link" className="p-0" onClick={() => setActiveTab("signup")}>
-                  Sign Up
-                </Button>
-              </p>
-            )}
-            {activeTab === 'signup' && (
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Already have an account?{" "}
-                <Button variant="link" className="p-0" onClick={() => setActiveTab("signin")}>
-                  Sign In
-                </Button>
-              </p>
-            )}
-          </Tabs>
         </CardContent>
       </Card>
     </div>

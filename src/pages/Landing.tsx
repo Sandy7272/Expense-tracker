@@ -216,27 +216,39 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card
-                  className="glass-card hover-lift border-border/50 overflow-hidden group"
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+            {features.map((feature, index) => {
+              // Bento grid column spans
+              const columnSpan = 
+                index === 0 ? 'lg:col-span-3' :
+                index === 1 ? 'lg:col-span-3' :
+                index === 2 ? 'lg:col-span-2' :
+                index === 3 ? 'lg:col-span-2' :
+                index === 4 ? 'lg:col-span-2' :
+                'lg:col-span-6';
+              
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className={columnSpan}
                 >
-                  <CardContent className="p-6">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${feature.gradient} bg-opacity-10 w-fit mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                      <feature.icon className="h-6 w-6 text-foreground" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  <Card
+                    className="glass-card hover-lift border-border/50 overflow-hidden group h-full"
+                  >
+                    <CardContent className="p-6">
+                      <div className={`p-3 rounded-xl bg-gradient-to-br ${feature.gradient} bg-opacity-10 w-fit mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                        <feature.icon className="h-6 w-6 text-foreground" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                      <p className="text-muted-foreground">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </SectionWrapper>
       </section>
@@ -300,6 +312,58 @@ export default function Landing() {
                     </div>
                     <h3 className="font-bold text-lg">{benefit.label}</h3>
                     <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </SectionWrapper>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <SectionWrapper>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                What Our Users Say
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Join thousands of satisfied users managing their finances smarter
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "This tracker is a game-changer. I finally feel in control of my money and can see exactly where it's going.",
+                name: "Alex R."
+              },
+              {
+                quote: "The best financial tool I've ever used. Clean interface, powerful features, and completely free!",
+                name: "Priya S."
+              },
+              {
+                quote: "Managing multiple loans and investments has never been easier. This app saves me hours every month.",
+                name: "Marcus T."
+              }
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Card className="glass-card hover-lift border-border/50 h-full">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Sparkles key={i} className="h-4 w-4 text-warning fill-warning" />
+                      ))}
+                    </div>
+                    <p className="text-muted-foreground italic">"{testimonial.quote}"</p>
+                    <p className="font-semibold text-foreground">{testimonial.name}</p>
                   </CardContent>
                 </Card>
               </motion.div>

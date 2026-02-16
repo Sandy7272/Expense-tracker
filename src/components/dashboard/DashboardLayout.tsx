@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { 
-  Home, 
-  CreditCard, 
-  BarChart3, 
-  PiggyBank, 
-  Settings,
-  Menu,
-  X,
-  RefreshCw,
-  Users,
-  LogOut
+  Home, CreditCard, BarChart3, PiggyBank, Settings, Menu, X, RefreshCw, Users, LogOut
 } from "lucide-react";
 import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { Button } from "@/components/ui/button";
@@ -40,44 +31,33 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
 
   const showDateFilterAndRefresh = !['/loans', '/settings'].includes(location.pathname);
 
+  const currentPage = navigation.find(n => n.href === location.pathname)?.name || "Dashboard";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/5 relative">
-      {/* Cyber Grid Background */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,255,255,0.3) 1px, transparent 0)',
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
-      
+    <div className="min-h-screen bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 glass-card border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border transform transition-transform duration-200 ease-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-white/10">
-          <h1 className="text-xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
-            ⚡ Expense Tracker
+        <div className="flex items-center justify-between h-14 px-5 border-b border-border">
+          <h1 className="text-lg font-bold text-foreground">
+            💸 FinTrack
           </h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <nav className="mt-8 px-4 space-y-2">
+        <nav className="mt-4 px-3 space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
@@ -86,27 +66,24 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 cyber-button",
+                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                   isActive
-                    ? "bg-primary/20 text-primary glow-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon className={cn(
-                  "mr-3 h-5 w-5 transition-all duration-300",
-                  isActive ? "text-primary animate-pulse" : "text-muted-foreground group-hover:text-primary"
-                )} />
+                <Icon className={cn("mr-3 h-4 w-4", isActive && "text-primary")} />
                 {item.name}
               </Link>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-6 left-4 right-4 space-y-4">
-          <div className="flex items-center gap-3 p-3 glass-card border border-white/10">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-xs font-bold text-white">
+        <div className="absolute bottom-4 left-3 right-3">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -115,55 +92,30 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 {user?.email}
               </p>
             </div>
-            <Button
-              onClick={signOut}
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
+            <Button onClick={signOut} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0">
+              <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
-          
         </div>
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-60">
         {/* Top header */}
-        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:px-6">
+        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-border/50">
+          <div className="flex items-center justify-between gap-4 px-4 sm:px-6 h-14">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="lg:hidden h-8 w-8 p-0" onClick={() => setSidebarOpen(true)}>
+                <Menu className="h-4 w-4" />
               </Button>
-              <div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">
-                  Dashboard
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Track your expenses in real-time
-                </p>
-              </div>
+              <h2 className="text-base font-semibold text-foreground">{currentPage}</h2>
             </div>
             
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
               {showDateFilterAndRefresh && <DateRangeSelector />}
               {showDateFilterAndRefresh && onRefresh && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onRefresh}
-                  disabled={isLoading}
-                  className="hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
-                >
-                  <RefreshCw className={cn("h-4 w-4 sm:mr-2", isLoading && "animate-spin")} />
-                  <span className="hidden sm:inline">Refresh Data</span>
+                <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="h-8">
+                  <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
                 </Button>
               )}
             </div>
@@ -171,7 +123,7 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         </div>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 sm:p-6 max-w-[1400px] mx-auto">
           {children}
         </main>
       </div>

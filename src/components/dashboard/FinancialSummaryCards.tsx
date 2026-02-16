@@ -1,7 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, PiggyBank, CreditCard, ArrowUpRight, ArrowDownLeft, Wallet } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
+import {
+  TrendingUp, TrendingDown, PiggyBank, CreditCard, ArrowUpRight, ArrowDownLeft, Wallet
+} from "lucide-react";
 
 interface FinancialSummaryCardsProps {
   totalIncome: number;
@@ -14,145 +16,38 @@ interface FinancialSummaryCardsProps {
 }
 
 export function FinancialSummaryCards({ 
-  totalIncome, 
-  totalSpend, 
-  totalInvestment, 
-  emi,
-  moneyLent,
-  moneyBorrowed,
-  savingInBank
+  totalIncome, totalSpend, totalInvestment, emi, moneyLent, moneyBorrowed, savingInBank
 }: FinancialSummaryCardsProps) {
   const { formatAmount } = useCurrency();
   
   const cards = [
-    {
-      title: "Total Income",
-      value: formatAmount(totalIncome),
-      icon: TrendingUp,
-      gradient: "from-income/20 to-success/20",
-      iconColor: "text-income",
-      glowClass: "glow-success",
-      emoji: "💰"
-    },
-    {
-      title: "Total Spend",
-      value: formatAmount(totalSpend),
-      icon: TrendingDown,
-      gradient: "from-expense/20 to-destructive/20",
-      iconColor: "text-expense",
-      glowClass: "glow-expense",
-      emoji: "💸"
-    },
-    {
-      title: "Total Investment",
-      value: formatAmount(totalInvestment),
-      icon: PiggyBank,
-      gradient: "from-investment/20 to-primary/20",
-      iconColor: "text-investment",
-      glowClass: "glow-primary",
-      emoji: "📈"
-    },
-    {
-      title: "EMI",
-      value: formatAmount(emi),
-      icon: CreditCard,
-      gradient: "from-warning/20 to-accent/20",
-      iconColor: "text-warning",
-      glowClass: "glow-accent",
-      emoji: "💳"
-    },
-    {
-      title: "Money Lent",
-      value: formatAmount(moneyLent),
-      icon: ArrowUpRight,
-      gradient: "from-lending/20 to-primary/20",
-      iconColor: "text-lending",
-      glowClass: "glow-primary",
-      emoji: "↗️"
-    },
-    {
-      title: "Money Borrowed",
-      value: formatAmount(moneyBorrowed),
-      icon: ArrowDownLeft,
-      gradient: "from-success/20 to-income/20",
-      iconColor: "text-success",
-      glowClass: "glow-success",
-      emoji: "↙️"
-    },
-    {
-      title: "Saving in Bank",
-      value: formatAmount(savingInBank),
-      icon: Wallet,
-      gradient: savingInBank >= 0 ? "from-success/20 to-income/20" : "from-expense/20 to-destructive/20",
+    { title: "Total Income", value: formatAmount(totalIncome), icon: TrendingUp, iconBg: "bg-income/15", iconColor: "text-income" },
+    { title: "Total Spend", value: formatAmount(totalSpend), icon: TrendingDown, iconBg: "bg-expense/15", iconColor: "text-expense" },
+    { title: "Investment", value: formatAmount(totalInvestment), icon: PiggyBank, iconBg: "bg-investment/15", iconColor: "text-investment" },
+    { title: "EMI", value: formatAmount(emi), icon: CreditCard, iconBg: "bg-warning/15", iconColor: "text-warning" },
+    { title: "Money Lent", value: formatAmount(moneyLent), icon: ArrowUpRight, iconBg: "bg-lending/15", iconColor: "text-lending" },
+    { title: "Money Borrowed", value: formatAmount(moneyBorrowed), icon: ArrowDownLeft, iconBg: "bg-success/15", iconColor: "text-success" },
+    { title: "Savings", value: formatAmount(savingInBank), icon: Wallet,
+      iconBg: savingInBank >= 0 ? "bg-success/15" : "bg-expense/15",
       iconColor: savingInBank >= 0 ? "text-success" : "text-expense",
-      glowClass: savingInBank >= 0 ? "glow-success" : "glow-expense",
-      emoji: "🏦",
-      isNegative: savingInBank < 0
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-      {cards.map((card, index) => {
+    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card 
-            key={card.title}
-            className={cn(
-              "relative overflow-hidden glass-card hover:glass-card transition-all duration-300 hover:scale-[1.02] group cursor-pointer",
-              card.glowClass
-            )}
-          >
-            {/* Cyber Grid Background */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
-                backgroundSize: '20px 20px'
-              }} />
-            </div>
-            
-            <div className="relative p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "p-2 rounded-xl glass-card border border-white/20",
-                    `bg-gradient-to-br ${card.gradient}`
-                  )}>
-                    <Icon className={cn("h-4 w-4", card.iconColor)} />
-                  </div>
-                  <span className="text-xl">{card.emoji}</span>
-                </div>
-                
-                <div className={cn(
-                  "px-2 py-1 rounded-lg text-xs font-medium glass-card",
-                  card.isNegative ? 'text-expense' : 'text-muted-foreground'
-                )}>
-                  {card.isNegative ? 'Deficit' : 'Active'}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                  {card.title}
-                </p>
-                <p className={cn(
-                  "text-lg lg:text-xl font-bold font-heading counter-animate transition-transform duration-200 group-hover:scale-105",
-                  card.isNegative ? 'text-expense' : 'text-foreground'
-                )}>
-                  {card.value}
-                </p>
+          <Card key={card.title} className="kpi-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn("p-1.5 rounded-lg", card.iconBg)}>
+                <Icon className={cn("h-3.5 w-3.5", card.iconColor)} />
               </div>
             </div>
-
-            {/* Neon Border Effect */}
-            <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className={cn(
-                "absolute inset-0 rounded-lg",
-                "bg-gradient-to-r from-transparent via-white/10 to-transparent",
-                "animate-pulse"
-              )} />
-            </div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+              {card.title}
+            </p>
+            <p className="text-lg font-bold text-foreground">{card.value}</p>
           </Card>
         );
       })}

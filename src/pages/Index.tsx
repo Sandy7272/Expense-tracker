@@ -1,89 +1,56 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { FinancialSummaryCards } from "@/components/dashboard/FinancialSummaryCards";
-import { InvestmentBreakdown } from "@/components/dashboard/InvestmentBreakdown";
-import { LendBorrowOverview } from "@/components/dashboard/LendBorrowOverview";
-import { PersonLendingTable } from "@/components/dashboard/PersonLendingTable";
+import { PremiumKPICards } from "@/components/dashboard/PremiumKPICards";
+import { FinancialHealthScore } from "@/components/dashboard/FinancialHealthScore";
+import { BudgetProgressSection } from "@/components/dashboard/BudgetProgressSection";
+import { SpendingInsights } from "@/components/dashboard/SpendingInsights";
+import { QuickAddExpense } from "@/components/dashboard/QuickAddExpense";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { MonthlyTrendsChart } from "@/components/dashboard/MonthlyTrendsChart";
-import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
-import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
 import { EMITrackingCard } from "@/components/dashboard/EMITrackingCard";
-import { BankStatementUpload } from "@/components/dashboard/BankStatementUpload";
 import { useTransactions } from "@/hooks/useTransactions";
-import { useDateRangeFilter, DateRange } from "@/hooks/useDateRangeFilter";
+import { useDateRangeFilter } from "@/hooks/useDateRangeFilter";
 import { useInvestmentData } from "@/hooks/useInvestmentData";
 import { useLendingTransactions } from "@/hooks/useLendingTransactions";
 import { format } from "date-fns";
 
 export default function Index() {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const { transactions, isLoading } = useTransactions();
-  const { transactions: filteredTransactions } = useTransactions(); // Use transactions directly from hook
-  const { dateRange } = useDateRangeFilter(); // Get dateRange from global context
-  const { investmentData, isLoading: investmentLoading } = useInvestmentData(); // Use global dateRange
-  const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions(); // Use global dateRange
+  const { transactions: filteredTransactions, isLoading } = useTransactions();
+  const { investmentData, isLoading: investmentLoading } = useInvestmentData();
+  const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions();
 
-  // Process lending transactions for overview
+  // Lending summary
   const lendBorrowData = useMemo(() => {
-    const lent = lendingTransactions.filter(t => t.type === 'lent').reduce((sum, t) => sum + Number(t.amount), 0);
-    const borrowed = lendingTransactions.filter(t => t.type === 'borrowed').reduce((sum, t) => sum + Number(t.amount), 0);
-    const repaidByThem = lendingTransactions.filter(t => t.type === 'repaid_by_them').reduce((sum, t) => sum + Number(t.amount), 0);
-    const repaidByMe = lendingTransactions.filter(t => t.type === 'repaid_by_me').reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    return {
-      moneyLent: lent - repaidByThem,
-      lentRepaymentReceived: repaidByThem,
-      moneyBorrowed: borrowed - repaidByMe,
-      borrowedRepayment: repaidByMe
-    };
+    const lent = lendingTransactions.filter(t => t.type === 'lent').reduce((s, t) => s + Number(t.amount), 0);
+    const borrowed = lendingTransactions.filter(t => t.type === 'borrowed').reduce((s, t) => s + Number(t.amount), 0);
+    const repaidByThem = lendingTransactions.filter(t => t.type === 'repaid_by_them').reduce((s, t) => s + Number(t.amount), 0);
+    const repaidByMe = lendingTransactions.filter(t => t.type === 'repaid_by_me').reduce((s, t) => s + Number(t.amount), 0);
+    return { moneyLent: lent - repaidByThem, moneyBorrowed: borrowed - repaidByMe };
   }, [lendingTransactions]);
 
-  // Process person lending summary
-  const personLendingData = useMemo(() => {
-    const personMap = new Map<string, { name: string; lent: number; borrowed: number; repaidByThem: number; repaidByMe: number }>();
-    
-    lendingTransactions.forEach(t => {
-      if (!personMap.has(t.person_name)) {
-        personMap.set(t.person_name, { name: t.person_name, lent: 0, borrowed: 0, repaidByThem: 0, repaidByMe: 0 });
-      }
-      const person = personMap.get(t.person_name)!;
-      
-      if (t.type === 'lent') person.lent += Number(t.amount);
-      else if (t.type === 'borrowed') person.borrowed += Number(t.amount);
-      else if (t.type === 'repaid_by_them') person.repaidByThem += Number(t.amount);
-      else if (t.type === 'repaid_by_me') person.repaidByMe += Number(t.amount);
-    });
-    
-    return Array.from(personMap.values()).map(person => ({
-      name: person.name,
-      amount: person.lent + person.borrowed,
-      totalRemaining: (person.lent - person.repaidByThem) - (person.borrowed - person.repaidByMe)
-    })).filter(p => p.amount > 0); // Only show people with transactions
-  }, [lendingTransactions]);
-
-  // Calculate financial data from filtered transactions
+  // Financial data
   const financialData = useMemo(() => {
-    const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
-    const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
-    
-    // Calculate EMI from transactions with "EMI" in category
+    const income = filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+    const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
     const emi = filteredTransactions
       .filter(t => t.type === 'expense' && t.category?.toLowerCase().includes('emi'))
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    
+      .reduce((s, t) => s + Number(t.amount), 0);
+    const totalInvestment = investmentData?.totalInvestment || 0;
+    const netProfit = income - expenses;
+    const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+
     return {
       totalIncome: income,
-      totalSpend: expenses,
-      totalInvestment: investmentData?.totalInvestment || 0,
+      totalExpenses: expenses,
+      totalInvestment,
       emi,
-      moneyLent: lendBorrowData.moneyLent,
-      moneyBorrowed: lendBorrowData.moneyBorrowed,
-      savingInBank: income - expenses - (investmentData?.totalInvestment || 0)
+      netProfit,
+      savingsRate,
+      totalBalance: income - expenses - totalInvestment,
     };
-  }, [filteredTransactions, investmentData, lendBorrowData]);
+  }, [filteredTransactions, investmentData]);
 
-  // Transform filtered transactions to category data for pie chart
+  // Category data for pie chart
   const categoryData = useMemo(() => {
     const categoryTotals = filteredTransactions
       .filter(t => t.type === 'expense')
@@ -95,63 +62,96 @@ export default function Index() {
     return Object.entries(categoryTotals).map(([category, amount], index) => ({
       category,
       amount,
-      color: `hsl(${index * 45}, 70%, 60%)`
+      color: `hsl(${262 + index * 30}, 60%, ${55 + index * 3}%)`
     }));
   }, [filteredTransactions]);
 
-  // Transform filtered transactions to monthly data for trends chart
+  // Monthly data for trends
   const monthlyData = useMemo(() => {
     const monthlyTotals = filteredTransactions.reduce((acc, t) => {
       const month = format(new Date(t.date), 'MMM yyyy');
-      if (!acc[month]) {
-        acc[month] = { month, income: 0, expenses: 0 };
-      }
-      if (t.type === 'income') {
-        acc[month].income += Number(t.amount);
-      } else {
-        acc[month].expenses += Number(t.amount);
-      }
+      if (!acc[month]) acc[month] = { month, income: 0, expenses: 0 };
+      if (t.type === 'income') acc[month].income += Number(t.amount);
+      else acc[month].expenses += Number(t.amount);
       return acc;
     }, {} as Record<string, { month: string; income: number; expenses: number }>);
-
     return Object.values(monthlyTotals).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   }, [filteredTransactions]);
+
+  // Generate spending insights
+  const insights = useMemo(() => {
+    const result: { type: "positive" | "negative" | "neutral"; message: string }[] = [];
+    if (financialData.totalIncome === 0 && financialData.totalExpenses === 0) return result;
+
+    if (financialData.savingsRate >= 30) {
+      result.push({ type: "positive", message: `Great savings rate of ${financialData.savingsRate.toFixed(0)}%! You're building wealth.` });
+    } else if (financialData.savingsRate < 10 && financialData.totalIncome > 0) {
+      result.push({ type: "negative", message: `Your savings rate is only ${financialData.savingsRate.toFixed(0)}%. Try to save at least 20%.` });
+    }
+
+    if (financialData.netProfit < 0) {
+      result.push({ type: "negative", message: `You're spending more than you earn. Net loss: ${Math.abs(financialData.netProfit).toFixed(0)}` });
+    }
+
+    // Top spending category
+    if (categoryData.length > 0) {
+      const top = categoryData.reduce((a, b) => a.amount > b.amount ? a : b);
+      result.push({ type: "neutral", message: `Highest spending: ${top.category} at ${((top.amount / financialData.totalExpenses) * 100).toFixed(0)}% of total expenses.` });
+    }
+
+    if (financialData.emi > 0 && financialData.totalIncome > 0) {
+      const emiRatio = (financialData.emi / financialData.totalIncome) * 100;
+      if (emiRatio > 40) {
+        result.push({ type: "negative", message: `EMI payments consume ${emiRatio.toFixed(0)}% of your income. Consider restructuring.` });
+      }
+    }
+
+    return result;
+  }, [financialData, categoryData]);
 
   const isAnyLoading = isLoading || investmentLoading || lendingLoading;
 
   return (
     <DashboardLayout onRefresh={() => {}} isLoading={isAnyLoading}>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse">
-              Financial Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1">Track your cyberpunk-style financial journey</p>
-          </div>
+      <div className="space-y-6">
+        {/* Quick Add */}
+        <QuickAddExpense />
+
+        {/* KPI Cards */}
+        <PremiumKPICards
+          totalBalance={financialData.totalBalance}
+          monthlyIncome={financialData.totalIncome}
+          monthlyExpenses={financialData.totalExpenses}
+          netProfit={financialData.netProfit}
+          savingsRate={financialData.savingsRate}
+          outstandingPayments={lendBorrowData.moneyLent}
+          upcomingBills={0}
+          cashFlowTrend={financialData.savingsRate}
+        />
+
+        {/* Health Score + Budget + Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FinancialHealthScore
+            totalIncome={financialData.totalIncome}
+            totalExpenses={financialData.totalExpenses}
+            totalInvestment={financialData.totalInvestment}
+            emi={financialData.emi}
+            moneyLent={lendBorrowData.moneyLent}
+            moneyBorrowed={lendBorrowData.moneyBorrowed}
+          />
+          <BudgetProgressSection budgets={[]} />
+          <SpendingInsights insights={insights} />
         </div>
 
-        <FinancialSummaryCards {...financialData} />
-        
-        <BankStatementUpload />
-        
+        {/* EMI Tracking */}
         <EMITrackingCard />
-        
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <InvestmentBreakdown data={investmentData || { mutualFunds: 0, stocks: 0, insurancePolicy: 0, chitFunds: 0, gold: 0, crypto: 0, policy: 0, generalInvestment: 0, totalInvestment: 0 }} />
-          <LendBorrowOverview data={lendBorrowData} />
-        </div>
 
-        {personLendingData.length > 0 && <PersonLendingTable data={personLendingData} />}
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Charts */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <CategoryPieChart data={categoryData} />
           <MonthlyTrendsChart data={monthlyData} />
         </div>
       </div>
-
-      <FloatingAddButton onClick={() => setShowAddModal(true)} />
-      <AddExpenseModal open={showAddModal} onOpenChange={setShowAddModal} />
     </DashboardLayout>
   );
 }

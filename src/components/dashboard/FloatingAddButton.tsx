@@ -11,16 +11,14 @@ export function FloatingAddButton({ onClick }: FloatingAddButtonProps) {
     <Button
       onClick={onClick}
       className={cn(
-        "fixed bottom-8 right-8 h-14 w-14 rounded-full",
-        "glass-card glow-primary hover:glow-accent",
-        "border-2 border-primary/30 hover:border-accent/50",
-        "transition-all duration-300 hover:scale-110",
-        "shadow-lg hover:shadow-2xl",
+        "fixed bottom-6 right-6 h-12 w-12 rounded-full",
+        "bg-primary hover:bg-primary/90 text-primary-foreground",
+        "shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105",
         "z-50"
       )}
       size="lg"
     >
-      <Plus className="h-6 w-6 text-primary" />
+      <Plus className="h-5 w-5" />
     </Button>
   );
 }

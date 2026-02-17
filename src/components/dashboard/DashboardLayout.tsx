@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { 
-  Home, CreditCard, BarChart3, PiggyBank, Settings, Menu, X, RefreshCw, Users, LogOut
+  Home, CreditCard, BarChart3, PiggyBank, Settings, Menu, X, RefreshCw, Users, LogOut,
+  CalendarClock, Target, TrendingUp
 } from "lucide-react";
 import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,9 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Transactions", href: "/transactions", icon: CreditCard },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Budgets", href: "/budgets", icon: Target },
+  { name: "Recurring", href: "/recurring", icon: CalendarClock },
+  { name: "P&L", href: "/profit-loss", icon: TrendingUp },
   { name: "Investments", href: "/investments", icon: PiggyBank },
   { name: "Lending", href: "/lending", icon: Users },
   { name: "Loans", href: "/loans", icon: CreditCard },

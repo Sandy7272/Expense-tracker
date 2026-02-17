@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { DateRangeProvider } from "./contexts/DateRangeContext";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import Transactions from "./pages/Transactions";
 import Analytics from "./pages/Analytics";
@@ -16,6 +17,9 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import RecurringPayments from "./pages/RecurringPayments";
+import Budgets from "./pages/Budgets";
+import ProfitLoss from "./pages/ProfitLoss";
 
 const queryClient = new QueryClient();
 
@@ -38,24 +42,29 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <DateRangeProvider>
       <CurrencyProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
-              <Route path="/lending" element={<ProtectedRoute><Lending /></ProtectedRoute>} />
-              <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <SubscriptionProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+                <Route path="/lending" element={<ProtectedRoute><Lending /></ProtectedRoute>} />
+                <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
+                <Route path="/recurring" element={<ProtectedRoute><RecurringPayments /></ProtectedRoute>} />
+                <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+                <Route path="/profit-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </SubscriptionProvider>
       </CurrencyProvider>
     </DateRangeProvider>
   </QueryClientProvider>

@@ -12,12 +12,14 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useDateRangeFilter } from "@/hooks/useDateRangeFilter";
 import { useInvestmentData } from "@/hooks/useInvestmentData";
 import { useLendingTransactions } from "@/hooks/useLendingTransactions";
-import { format } from "date-fns";
+import { useBudgets } from "@/hooks/useBudgets";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 export default function Index() {
   const { transactions: filteredTransactions, isLoading } = useTransactions();
   const { investmentData, isLoading: investmentLoading } = useInvestmentData();
   const { transactions: lendingTransactions, isLoading: lendingLoading } = useLendingTransactions();
+  const { budgets } = useBudgets();
 
   // Lending summary
   const lendBorrowData = useMemo(() => {
@@ -139,7 +141,13 @@ export default function Index() {
             moneyLent={lendBorrowData.moneyLent}
             moneyBorrowed={lendBorrowData.moneyBorrowed}
           />
-          <BudgetProgressSection budgets={[]} />
+          <BudgetProgressSection budgets={budgets.map(b => {
+            const now = new Date();
+            const spent = filteredTransactions
+              .filter(t => t.type === 'expense' && t.category === b.category && new Date(t.date) >= startOfMonth(now) && new Date(t.date) <= endOfMonth(now))
+              .reduce((s, t) => s + Number(t.amount), 0);
+            return { category: b.category, budget: Number(b.monthly_limit), spent };
+          })} />
           <SpendingInsights insights={insights} />
         </div>
 

@@ -54,3 +54,6 @@ verify_jwt = false
 
 [functions.categorize-transactions]
 verify_jwt = true
+
+[functions.ai-finance-assistant]
+verify_jwt = false

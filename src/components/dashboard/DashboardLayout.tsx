@@ -4,6 +4,9 @@ import {
   CalendarClock, Target, TrendingUp
 } from "lucide-react";
 import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
+import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
+import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
+import { AIAssistantChat } from "@/components/ai/AIAssistantChat";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
@@ -127,10 +130,15 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         </div>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 max-w-[1400px] mx-auto">
+        <main className="p-4 sm:p-6 pb-24 md:pb-6 max-w-[1400px] mx-auto">
           {children}
         </main>
       </div>
+
+      {/* Global: Mobile bottom nav, FAB, AI Chat */}
+      <MobileBottomNav />
+      <FloatingAddButton />
+      <AIAssistantChat />
     </div>
   );
 }

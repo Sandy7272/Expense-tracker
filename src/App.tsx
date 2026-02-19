@@ -20,6 +20,7 @@ import Landing from "./pages/Landing";
 import RecurringPayments from "./pages/RecurringPayments";
 import Budgets from "./pages/Budgets";
 import ProfitLoss from "./pages/ProfitLoss";
+import Subscription from "./pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/recurring" element={<ProtectedRoute><RecurringPayments /></ProtectedRoute>} />
                 <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
                 <Route path="/profit-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
+                <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

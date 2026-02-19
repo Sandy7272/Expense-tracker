@@ -15,6 +15,66 @@ serve(async (req) => {
 
     let systemPrompt = "";
 
+    if (mode === "budget_suggestions") {
+      // AI Budget Suggestions — analyze 3-month category spending
+      const categoryData = messages[0]?.content ? JSON.parse(messages[0].content) : [];
+      
+      const systemPrompt = `You are a personal finance advisor for Indian users. 
+Analyze the user's spending by category over the last 3 months and suggest realistic monthly budgets.
+
+Return ONLY a JSON array with this exact format:
+[
+  {
+    "category": "Food",
+    "avg_spending": 8500,
+    "suggested_budget": 9000,
+    "rationale": "Your average food spend is ₹8,500/month. Suggested ₹9,000 gives 6% buffer.",
+    "trend": "stable"
+  }
+]
+
+Rules:
+- suggested_budget should be avg_spending + 10-15% buffer
+- If avg is very high, suggest a reduction with rationale
+- trend: "increasing" | "decreasing" | "stable"
+- rationale must be 1 concise sentence in friendly tone
+- Use ₹ symbol in rationale
+- Return max 8 most significant categories
+- Return ONLY raw JSON array, no markdown`;
+
+      const userPrompt = `Category spending data (last 3 months, amounts in INR):
+${categoryData.map((c: any) => `${c.category}: avg ₹${Math.round(c.avg)}/month, total ₹${Math.round(c.total)} over 3 months, ${c.count} transactions`).join('\n')}`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`AI gateway error: ${response.status} ${text}`);
+      }
+
+      const data = await response.json();
+      const raw = data.choices?.[0]?.message?.content || "[]";
+      const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+      return new Response(JSON.stringify({ result: cleaned }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (mode === "parse_expense") {
       // Natural language expense parsing
       const userText = messages[0]?.content || "";

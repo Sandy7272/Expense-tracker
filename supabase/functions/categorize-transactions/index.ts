@@ -4,7 +4,7 @@ import pdfParse from "npm:pdf-parse@1.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version',
 };
 
 serve(async (req) => {
@@ -20,17 +20,19 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Handle PDF parsing mode
+    // Handle PDF parsing mode — AI-powered full extraction
     if (body.mode === 'parse-pdf') {
-      console.log('Parsing PDF file...');
+      console.log('Parsing PDF file with AI...');
       
-      const base64Data = body.pdfFile.split(',')[1]; // Remove data:application/pdf;base64, prefix
+      const base64Data = body.pdfFile.split(',')[1];
       const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       
       const data = await pdfParse(pdfBuffer);
-      console.log('PDF text extracted, parsing transactions...');
+      const pdfText = data.text;
+      console.log(`PDF text extracted: ${pdfText.length} chars`);
       
-      const transactions = extractTransactionsFromText(data.text);
+      // Use AI to extract transactions from the raw PDF text
+      const transactions = await aiExtractTransactions(pdfText, LOVABLE_API_KEY);
       
       if (transactions.length === 0) {
         return new Response(
@@ -39,22 +41,13 @@ serve(async (req) => {
         );
       }
       
-      // Now categorize the extracted transactions
-      const categorizations = await categorizeTransactions(transactions, LOVABLE_API_KEY);
-      
-      const categorizedTransactions = transactions.map((t, i) => ({
-        ...t,
-        category: categorizations[i]?.category || 'Other',
-        confidence: categorizations[i]?.confidence || 0.5
-      }));
-      
       return new Response(
-        JSON.stringify({ transactions: categorizedTransactions }), 
+        JSON.stringify({ transactions }), 
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Standard categorization mode
+    // Standard categorization mode (CSV/Excel)
     const { transactions } = body;
     console.log(`Categorizing ${transactions.length} transactions`);
 
@@ -66,48 +59,103 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("categorize-transactions error:", errorMessage);
     
-    // Log full details server-side
-    console.error("categorize-transactions error:", {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Return sanitized error to client
     return new Response(
       JSON.stringify({ 
         message: "Unable to process transactions. Please try again.",
-        code: "PROCESSING_ERROR"
+        code: "PROCESSING_ERROR",
+        detail: errorMessage
       }), 
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
+// AI-powered PDF transaction extraction — handles any bank format
+async function aiExtractTransactions(pdfText: string, apiKey: string) {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const systemPrompt = `You are an expert bank statement parser for Indian banks (HDFC, SBI, ICICI, Axis, Kotak, YES Bank, etc.).
+
+Extract ALL financial transactions from the provided bank statement text.
+
+Return ONLY a JSON array. Each transaction must have:
+- date: "YYYY-MM-DD" format
+- description: clean merchant/transaction name (max 100 chars)
+- amount: positive number
+- type: "expense" | "income" (credit = income, debit = expense)
+- category: one of [Food, Transport, Shopping, Entertainment, Health, Education, Bills, Investment, EMI, Rent, Salary, Transfer, Other]
+- confidence: 0.0-1.0
+
+Rules:
+- ONLY include actual money transactions (not balance, opening/closing entries)
+- UPI/NEFT/RTGS to another person = Transfer
+- ATM withdrawal = expense, Other category
+- Salary credit = income, Salary category
+- EMI/loan = expense, EMI category
+- Parse ALL date formats: DD/MM/YY, DD-MM-YYYY, MMM DD, etc.
+- Default year to current year if not specified
+- Remove Dr/Cr suffixes from descriptions
+- Today's date: ${today}
+
+Return ONLY the raw JSON array, no markdown, no explanation.`;
+
+  const userPrompt = `Extract all transactions from this bank statement:\n\n${pdfText.substring(0, 12000)}`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("AI extraction error:", response.status, errorText);
+    
+    if (response.status === 429) throw new Error("Rate limit exceeded. Please try again later.");
+    if (response.status === 402) throw new Error("AI quota exceeded.");
+    throw new Error(`AI error: ${errorText}`);
+  }
+
+  const data = await response.json();
+  const aiResponse = data.choices[0].message.content;
+  console.log("AI response length:", aiResponse.length);
+
+  try {
+    const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      console.log(`AI extracted ${parsed.length} transactions`);
+      return parsed;
+    }
+    return JSON.parse(aiResponse);
+  } catch (parseError) {
+    console.error("Failed to parse AI response:", parseError);
+    // Fallback to regex-based extraction
+    return extractTransactionsFromTextFallback(pdfText);
+  }
+}
+
 async function categorizeTransactions(transactions: any[], apiKey: string) {
-  const systemPrompt = `You are a financial transaction categorization expert. Categorize transactions into one of these categories:
-- Food (restaurants, groceries, food delivery)
-- Travel (fuel, petrol, transport, flights, hotels)
-- EMI (loan payments, EMI, installments)
-- Rent (house rent, property payments)
-- Shopping (retail, online shopping, clothing)
-- Salary (income, salary credits)
-- Investment (mutual funds, stocks, SIP)
-- Entertainment (movies, subscriptions, gaming)
-- Bills (electricity, water, phone, internet)
-- Healthcare (medical, pharmacy, hospital)
-- Education (fees, courses, books)
-- Other (anything else)
+  const systemPrompt = `You are a financial transaction categorizer for Indian users.
+Categorize each transaction into: Food, Transport, EMI, Rent, Shopping, Salary, Investment, Entertainment, Bills, Healthcare, Education, Other.
 
-Return ONLY a JSON array with this exact format:
-[{"category": "Food", "confidence": 0.95}, {"category": "Travel", "confidence": 0.88}]
+Return ONLY a JSON array: [{"category": "Food", "confidence": 0.95}, ...]
+Return valid JSON only.`;
 
-Be precise and return valid JSON only.`;
-
-  const userPrompt = `Categorize these transactions:\n${transactions.map((t: any, i: number) => 
-    `${i + 1}. ${t.description} - Amount: ${t.amount}`
+  const userPrompt = `Categorize:\n${transactions.map((t: any, i: number) => 
+    `${i + 1}. ${t.description} - ₹${t.amount}`
   ).join('\n')}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -127,81 +175,51 @@ Be precise and return valid JSON only.`;
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
-    
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please try again later.");
-    }
-    if (response.status === 402) {
-      throw new Error("Payment required. Please add credits to your Lovable AI workspace.");
-    }
-    
+    if (response.status === 429) throw new Error("Rate limit exceeded.");
+    if (response.status === 402) throw new Error("AI quota exceeded.");
     throw new Error(`AI gateway error: ${errorText}`);
   }
 
   const data = await response.json();
   const aiResponse = data.choices[0].message.content;
-  
-  console.log("AI Response:", aiResponse);
 
-  // Parse the JSON response
   try {
     const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    } else {
-      return JSON.parse(aiResponse);
-    }
-  } catch (parseError) {
-    console.error("Failed to parse AI response:", parseError);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return JSON.parse(aiResponse);
+  } catch {
     return transactions.map(() => ({ category: "Other", confidence: 0.5 }));
   }
 }
 
-function extractTransactionsFromText(text: string) {
+function extractTransactionsFromTextFallback(text: string) {
   const transactions: any[] = [];
   const lines = text.split('\n');
   
-  // Multiple patterns for different bank formats
   const patterns = [
-    // Pattern 1: DD/MM/YYYY Description Amount (Debit/Credit)
     /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)\s*(Dr|Cr|Debit|Credit)?/i,
-    // Pattern 2: Date Description Withdrawal Deposit
-    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+(?:Withdrawal|Debit)?\s*([\d,]+\.?\d*)?\s+(?:Deposit|Credit)?\s*([\d,]+\.?\d*)?/i,
-    // Pattern 3: Compact format with amounts
     /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+([\d,]+\.?\d*)/i
   ];
   
   for (const line of lines) {
-    if (line.match(/Date|Transaction|Particulars|Description|Balance|Opening|Closing/i)) {
-      continue;
-    }
+    if (line.match(/Date|Transaction|Particulars|Description|Balance|Opening|Closing|Statement/i)) continue;
     
     for (const pattern of patterns) {
       const match = line.match(pattern);
       if (match) {
-        const date = match[1];
         const description = match[2]?.trim();
-        
-        let amount = 0;
-        let type: 'income' | 'expense' = 'expense';
-        
-        if (match[4] && !match[3]) {
-          amount = parseFloat((match[4] || '0').replace(/,/g, ''));
-          type = 'income';
-        } else if (match[3]) {
-          amount = parseFloat((match[3] || '0').replace(/,/g, ''));
-          const indicator = match[4]?.toLowerCase();
-          type = (indicator === 'cr' || indicator === 'credit') ? 'income' : 'expense';
-        }
+        const amount = parseFloat((match[3] || '0').replace(/,/g, ''));
+        const indicator = match[4]?.toLowerCase();
+        const type = (indicator === 'cr' || indicator === 'credit') ? 'income' : 'expense';
         
         if (amount > 0 && description && description.length > 3) {
           transactions.push({
-            date: normalizeDate(date),
-            description: description.substring(0, 200),
+            date: normalizeDate(match[1]),
+            description: description.substring(0, 100),
             amount,
             type,
-            confidence: 0.6
+            category: "Other",
+            confidence: 0.5
           });
           break;
         }
@@ -209,24 +227,19 @@ function extractTransactionsFromText(text: string) {
     }
   }
   
-  console.log(`Extracted ${transactions.length} transactions from PDF`);
   return transactions;
 }
 
 function normalizeDate(dateStr: string): string {
   try {
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0];
-    }
-    
     const parts = dateStr.split(/[/-]/);
     if (parts.length === 3) {
       const [day, month, year] = parts;
       const fullYear = year.length === 2 ? `20${year}` : year;
       return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
-    
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
     return new Date().toISOString().split('T')[0];
   } catch {
     return new Date().toISOString().split('T')[0];

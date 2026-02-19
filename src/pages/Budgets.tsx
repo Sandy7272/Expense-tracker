@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { PremiumGate } from "@/components/PremiumGate";
+import { AiBudgetSuggestions } from "@/components/ai/AiBudgetSuggestions";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useCategories } from "@/hooks/useCategories";
@@ -15,7 +16,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Plus, Trash2, Target, AlertTriangle } from "lucide-react";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -70,6 +70,10 @@ export default function Budgets() {
     setNewLimit("");
   };
 
+  const handleAcceptSuggestion = (category: string, limit: number) => {
+    createBudget.mutate({ category, monthly_limit: limit });
+  };
+
   return (
     <DashboardLayout>
       <PremiumGate feature="Budget Management">
@@ -84,8 +88,16 @@ export default function Budgets() {
             </Button>
           </div>
 
+          {/* AI Budget Suggestions */}
+          <AiBudgetSuggestions
+            transactions={transactions}
+            existingBudgetCategories={usedCategories}
+            onAccept={handleAcceptSuggestion}
+          />
+
           {/* Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
             <Card className="kpi-card p-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Budget</p>
               <p className="text-2xl font-bold text-foreground">{formatAmount(totalBudget)}</p>

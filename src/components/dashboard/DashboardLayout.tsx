@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { 
   Home, CreditCard, BarChart3, PiggyBank, Settings, Menu, X, RefreshCw, Users, LogOut,
-  CalendarClock, Target, TrendingUp
+  CalendarClock, Target, TrendingUp, Crown
 } from "lucide-react";
 import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
 import { FloatingAddButton } from "@/components/dashboard/FloatingAddButton";
 import { AIAssistantChat } from "@/components/ai/AIAssistantChat";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,6 +37,7 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { isPremium, trialDaysLeft } = useSubscription();
 
   const showDateFilterAndRefresh = !['/loans', '/settings'].includes(location.pathname);
 
@@ -87,17 +90,42 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
           })}
         </nav>
 
-        <div className="absolute bottom-4 left-3 right-3">
+        <div className="absolute bottom-4 left-3 right-3 space-y-2">
+          {/* Premium upsell / trial indicator */}
+          {!isPremium && (
+            <Link
+              to="/subscription"
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Crown className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-primary">Upgrade to Premium</p>
+                <p className="text-[10px] text-muted-foreground">₹299/month · 7-day free trial</p>
+              </div>
+            </Link>
+          )}
+          {isPremium && trialDaysLeft !== null && (
+            <Link
+              to="/subscription"
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-warning/10 border border-warning/20 hover:bg-warning/15 transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Crown className="h-3.5 w-3.5 text-warning shrink-0" />
+              <p className="text-[10px] text-warning font-medium">{trialDaysLeft}d trial left · Subscribe</p>
+            </Link>
+          )}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-xs font-bold text-primary">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs font-medium text-foreground truncate">{user?.email}</p>
+              {isPremium && trialDaysLeft === null && (
+                <Badge className="text-[9px] h-3.5 px-1 bg-primary/15 text-primary border-0 mt-0.5">Premium</Badge>
+              )}
             </div>
             <Button onClick={signOut} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0">
               <LogOut className="h-3.5 w-3.5" />

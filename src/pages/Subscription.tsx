@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Check, Zap, Brain, FileText, BarChart2,
-  Shield, Mic, TrendingUp, Star, Crown, Loader2, CheckCircle
+  Shield, Mic, TrendingUp, Star, Crown, Loader2, CheckCircle, AlertCircle
 } from "lucide-react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -34,15 +37,22 @@ const PREMIUM_FEATURES = [
 ];
 
 declare global {
-  interface Window {
-    Razorpay: any;
-  }
+  interface Window { Razorpay: any; }
 }
 
 export default function Subscription() {
   const { isPremium, trialDaysLeft, startTrial } = useSubscription();
+  const { subscription, isPremiumFromDB, isLoading: subLoading, refetch } = useSubscriptionStatus();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  // If DB shows premium, sync local context
+  useEffect(() => {
+    if (isPremiumFromDB && !isPremium) {
+      startTrial(false); // activate in local context too
+    }
+  }, [isPremiumFromDB]);
 
   const loadRazorpay = (): Promise<boolean> => {
     return new Promise(resolve => {
@@ -56,34 +66,71 @@ export default function Subscription() {
   };
 
   const handleSubscribe = async () => {
+    if (!user) {
+      toast({ title: "Please log in first", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Step 1: Load Razorpay SDK
       const loaded = await loadRazorpay();
       if (!loaded) throw new Error("Payment gateway failed to load. Check your internet connection.");
 
-      // NOTE: Replace 'rzp_test_YOUR_KEY_HERE' with your actual Razorpay key
-      // Get your key from: https://dashboard.razorpay.com/app/keys
-      const RAZORPAY_KEY = "rzp_test_YOUR_KEY_HERE";
+      // Step 2: Create order via edge function (server-side, secure)
+      const { data: orderData, error: orderError } = await supabase.functions.invoke("razorpay-create-order", {
+        body: { amount: 29900, currency: "INR" },
+      });
 
+      if (orderError || !orderData?.order_id) {
+        // Fallback: if edge function not configured yet, show setup message
+        if (orderError?.message?.includes("not configured")) {
+          toast({
+            title: "Razorpay Setup Needed",
+            description: "Please add your Razorpay API keys to complete setup. See instructions below.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        throw new Error(orderError?.message || "Failed to create payment order");
+      }
+
+      // Step 3: Open Razorpay checkout
       const options = {
-        key: RAZORPAY_KEY,
-        amount: 29900, // ₹299 in paise
-        currency: "INR",
+        key: orderData.key_id,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        order_id: orderData.order_id,
         name: "Finzo AI",
         description: "Premium Plan — AI Financial Assistant",
         image: "/favicon.ico",
-        handler: function (response: any) {
+        handler: async function (response: any) {
           console.log("Payment success:", response);
+          // Payment succeeded — wait for webhook to confirm, but also optimistically update
           toast({
-            title: "🎉 Welcome to Finzo Premium!",
-            description: "Your subscription is now active. Enjoy all premium features!",
+            title: "🎉 Payment Successful!",
+            description: "Activating your premium account... This may take a moment.",
           });
-          startTrial(false); // full premium after payment
+          // Optimistically activate locally
+          startTrial(false);
+          // Refetch subscription status from DB after a short delay
+          setTimeout(() => refetch(), 3000);
+          setIsLoading(false);
         },
-        prefill: { name: "", email: "", contact: "" },
-        notes: { plan: "premium_monthly" },
+        prefill: {
+          name: user.user_metadata?.display_name || "",
+          email: user.email || "",
+          contact: "",
+        },
+        notes: {
+          user_id: user.id,
+          plan: "premium_monthly",
+        },
         theme: { color: "#7C3AED" },
-        modal: { ondismiss: () => setIsLoading(false) },
+        modal: {
+          ondismiss: () => setIsLoading(false),
+        },
       };
 
       const rzp = new window.Razorpay(options);
@@ -111,6 +158,11 @@ export default function Subscription() {
     });
   };
 
+  const activePremium = isPremiumFromDB || isPremium;
+  const periodEnd = subscription?.current_period_end
+    ? new Date(subscription.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-8 pb-10">
@@ -129,8 +181,41 @@ export default function Subscription() {
           </p>
         </div>
 
-        {/* Trial Banner */}
-        {!isPremium && (
+        {/* Subscription Status Card */}
+        {activePremium ? (
+          <Card className="kpi-card border-income/30 bg-income/5 p-5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="p-2.5 rounded-xl bg-income/15">
+                <CheckCircle className="h-5 w-5 text-income" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">
+                  {trialDaysLeft !== null
+                    ? `🎁 Free Trial Active — ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left`
+                    : "✨ Premium Active"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {trialDaysLeft !== null
+                    ? "Subscribe before trial ends to keep premium access."
+                    : periodEnd
+                      ? `Next billing date: ${periodEnd}`
+                      : "All premium features are unlocked. Thank you!"}
+                </p>
+              </div>
+              {trialDaysLeft !== null && (
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground"
+                  onClick={handleSubscribe}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subscribe — ₹299/mo"}
+                </Button>
+              )}
+            </div>
+          </Card>
+        ) : (
+          /* Trial CTA */
           <Card className="kpi-card border-primary/30 bg-gradient-to-r from-primary/10 to-transparent p-5">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
@@ -146,37 +231,6 @@ export default function Subscription() {
                 <Zap className="h-4 w-4 mr-2" />
                 Start Free Trial
               </Button>
-            </div>
-          </Card>
-        )}
-
-        {/* Status card if premium or trial */}
-        {isPremium && (
-          <Card className="kpi-card border-success/30 bg-success/5 p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-success/15">
-                <CheckCircle className="h-5 w-5 text-success" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  {trialDaysLeft !== null ? `Free Trial Active — ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left` : "Premium Active ✨"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {trialDaysLeft !== null
-                    ? "Subscribe before trial ends to keep premium access."
-                    : "All premium features are unlocked. Thank you for subscribing!"}
-                </p>
-              </div>
-              {trialDaysLeft !== null && (
-                <Button
-                  size="sm"
-                  className="ml-auto bg-primary text-primary-foreground"
-                  onClick={handleSubscribe}
-                  disabled={isLoading}
-                >
-                  Subscribe Now
-                </Button>
-              )}
             </div>
           </Card>
         )}
@@ -203,9 +257,7 @@ export default function Subscription() {
                 </div>
               ))}
             </div>
-            <Button variant="outline" className="w-full" disabled>
-              Current Free Plan
-            </Button>
+            <Button variant="outline" className="w-full" disabled>Current Free Plan</Button>
           </Card>
 
           {/* Premium Plan */}
@@ -226,9 +278,7 @@ export default function Subscription() {
                   <span className="text-3xl font-bold text-foreground">₹299</span>
                   <span className="text-muted-foreground text-sm mb-1">/month</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ₹10/day — less than your daily chai ☕
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">₹10/day — less than your daily chai ☕</p>
               </div>
               <div className="space-y-2.5">
                 {PREMIUM_FEATURES.map(({ icon: Icon, label }) => (
@@ -245,18 +295,50 @@ export default function Subscription() {
                 onClick={handleSubscribe}
                 disabled={isLoading}
               >
-                {isLoading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-                ) : (
-                  <><Zap className="h-4 w-4 mr-2" />Subscribe Now — ₹299/month</>
-                )}
+                {isLoading
+                  ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+                  : <><Zap className="h-4 w-4 mr-2" />Subscribe Now — ₹299/month</>
+                }
               </Button>
               <p className="text-[10px] text-center text-muted-foreground">
-                Secure payment via Razorpay · Cancel anytime · 7-day free trial
+                Secure payment via Razorpay · Cancel anytime · 7-day free trial available
               </p>
             </Card>
           </motion.div>
         </div>
+
+        {/* Razorpay Setup Guide */}
+        <Card className="kpi-card p-5 border-warning/30 bg-warning/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-3">
+              <p className="font-semibold text-foreground text-sm">⚙️ Razorpay Setup Required</p>
+              <p className="text-xs text-muted-foreground">
+                To enable real payments, add your Razorpay API keys to Supabase secrets. Follow these steps:
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-2 list-none">
+                {[
+                  { step: "1", text: 'Go to razorpay.com → Settings → API Keys → Generate Test Key' },
+                  { step: "2", text: 'Add RAZORPAY_KEY_ID (starts with "rzp_test_...") to Supabase Secrets' },
+                  { step: "3", text: 'Add RAZORPAY_KEY_SECRET to Supabase Secrets' },
+                  { step: "4", text: 'Add RAZORPAY_WEBHOOK_SECRET to Supabase Secrets (from Razorpay Webhooks dashboard)' },
+                  { step: "5", text: `Set webhook URL in Razorpay dashboard → Webhooks → Add New:\nhttps://hiypurwywcvlrwlmopdf.supabase.co/functions/v1/razorpay-webhook` },
+                  { step: "6", text: 'Enable webhook events: payment.captured, payment.failed, subscription.charged, subscription.cancelled' },
+                ].map(({ step, text }) => (
+                  <li key={step} className="flex gap-2">
+                    <span className="h-4 w-4 rounded-full bg-warning/20 text-warning flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{step}</span>
+                    <span className="whitespace-pre-line">{text}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="bg-card rounded-lg p-2.5 border border-border/40 mt-2">
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  Webhook URL: https://hiypurwywcvlrwlmopdf.supabase.co/functions/v1/razorpay-webhook
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {/* Value Props */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

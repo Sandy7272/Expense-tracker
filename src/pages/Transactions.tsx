@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,10 @@ export default function Transactions() {
     setBulkDeleteOpen(false);
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
+  const PAGE_SIZE = 50;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
     const desc = (transaction.description || "").toLowerCase();
     const cat = (transaction.category || "").toLowerCase();
     const type = (transaction.type || "").toLowerCase();
@@ -107,7 +110,16 @@ export default function Transactions() {
     const matchesMaxAmount = !maxAmount || amount <= Number(maxAmount);
     
     return matchesSearch && matchesCategory && matchesType && matchesPerson && matchesMinAmount && matchesMaxAmount;
-  });
+  }), [transactions, searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const paginatedTransactions = useMemo(() => 
+    filteredTransactions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredTransactions, currentPage]
+  );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);
 
   const categories = [...new Set(transactions.map(t => t.category))];
   const people = [...new Set(transactions.map(t => t.person).filter(Boolean))];
@@ -316,7 +328,7 @@ export default function Transactions() {
                     </span>
                   </div>
                 )}
-                {filteredTransactions.map((transaction) => (
+                {paginatedTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
                     className="p-4 rounded-lg border glass-card hover:glow-primary transition-all duration-300 group"
@@ -389,6 +401,36 @@ export default function Transactions() {
                     </div>
                   </div>
                 ))}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredTransactions.length)} of {filteredTransactions.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage <= 1}
+                        onClick={() => setCurrentPage(p => p - 1)}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage(p => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

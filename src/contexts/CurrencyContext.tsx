@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useSettings } from '@/hooks/useSettings';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '@/lib/currency';
 
 interface CurrencyContextType {
@@ -12,13 +13,13 @@ interface CurrencyContextType {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-interface CurrencyProviderProps {
-  children: ReactNode;
-}
-
-export function CurrencyProvider({ children }: CurrencyProviderProps) {
+export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { settings, isLoading } = useSettings();
   const currency = settings?.currency || 'INR';
+  const setCurrency = useCurrencyStore((s) => s.setCurrency);
+
+  // Sync settings currency into Zustand store
+  useEffect(() => { setCurrency(currency); }, [currency, setCurrency]);
 
   const contextValue: CurrencyContextType = {
     currency,

@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useMemo, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useMemo, ReactNode, useCallback, useEffect } from 'react';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDateRangeStore } from '@/store/useDateRangeStore';
 
 export interface DateRange {
   from: Date;
@@ -16,19 +17,16 @@ const DateRangeContext = createContext<DateRangeContextType | undefined>(undefin
 
 export function DateRangeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [dateRange, setDateRangeState] = useState<DateRange>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
+  const { dateRange, setDateRange: setStoreRange } = useDateRangeStore();
 
   const setDateRange = useCallback((range: DateRange) => {
-    setDateRangeState(range);
+    setStoreRange(range);
     queryClient.invalidateQueries({ queryKey: ['investment-data'] });
     queryClient.invalidateQueries({ queryKey: ['lending-transactions'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
     queryClient.invalidateQueries({ queryKey: ['loans'] });
     queryClient.invalidateQueries({ queryKey: ['all-emi-data'] });
-  }, [queryClient]);
+  }, [queryClient, setStoreRange]);
 
   const value = useMemo(() => ({ dateRange, setDateRange }), [dateRange, setDateRange]);
 

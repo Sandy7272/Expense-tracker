@@ -79,7 +79,7 @@ export default function Subscription() {
 
       // Step 2: Create order via edge function (server-side, secure)
       const { data: orderData, error: orderError } = await supabase.functions.invoke("razorpay-create-order", {
-        body: { amount: 29900, currency: "INR" },
+        body: { plan: "premium_monthly" },
       });
 
       if (orderError || !orderData?.order_id) {

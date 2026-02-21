@@ -40,7 +40,21 @@ serve(async (req) => {
       });
     }
 
-    const { amount = 29900, currency = "INR" } = await req.json().catch(() => ({}));
+    // Server-side plan definitions — client cannot override amount
+    const VALID_PLANS: Record<string, { amount: number; currency: string }> = {
+      premium_monthly: { amount: 29900, currency: "INR" },
+    };
+
+    const { plan = "premium_monthly" } = await req.json().catch(() => ({}));
+
+    if (!VALID_PLANS[plan]) {
+      return new Response(JSON.stringify({ error: "Invalid plan selected" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { amount, currency } = VALID_PLANS[plan];
 
     // Create Razorpay order
     const credentials = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
@@ -80,8 +94,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Create order error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    console.error("Create order error:", {
+      message: e instanceof Error ? e.message : "Unknown error",
+      stack: e instanceof Error ? e.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    return new Response(JSON.stringify({ error: "An error occurred creating the order", code: "INTERNAL_ERROR" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

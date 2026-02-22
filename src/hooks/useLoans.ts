@@ -1,23 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import {
+  fetchLoans,
+  createLoan as svcCreate,
+  updateLoan as svcUpdate,
+  deleteLoan as svcDelete,
+} from '@/services/supabaseService';
+import type { Loan } from '@/services/supabaseService';
 
-export interface Loan {
-  id: string;
-  user_id: string;
-  loan_name: string;
-  principal_amount: number;
-  interest_rate: number;
-  tenure_months: number;
-  monthly_emi: number;
-  start_date: string;
-  status: string;
-  lender_name?: string;
-  loan_type: string;
-  created_at: string;
-  updated_at: string;
-}
+export type { Loan };
 
 export interface CreateLoanData {
   loan_name: string;
@@ -33,78 +25,33 @@ export const useLoans = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Calculate EMI using standard formula
   const calculateEMI = (principal: number, rate: number, tenure: number) => {
     const monthlyRate = rate / (12 * 100);
-    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / 
+    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, tenure)) /
                 (Math.pow(1 + monthlyRate, tenure) - 1);
     return Math.round(emi * 100) / 100;
   };
 
-  // Fetch loans
   const { data: loans = [], isLoading, error } = useQuery({
     queryKey: ['loans', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('loans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Loan[];
-    },
+    queryFn: () => fetchLoans(user!.id),
     enabled: !!user,
   });
 
-  // Create loan mutation
   const createLoan = useMutation({
-    mutationFn: async (loanData: CreateLoanData) => {
-      if (!user) throw new Error('User not authenticated');
-
-      const monthly_emi = calculateEMI(
-        loanData.principal_amount,
-        loanData.interest_rate,
-        loanData.tenure_months
-      );
-
-      const { data, error } = await supabase
-        .from('loans')
-        .insert({
-          ...loanData,
-          monthly_emi,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: (data: CreateLoanData) => {
+      const monthly_emi = calculateEMI(data.principal_amount, data.interest_rate, data.tenure_months);
+      return svcCreate(user!.id, { ...data, monthly_emi });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loans'] });
-      toast({
-        title: "Success",
-        description: "Loan added successfully",
-      });
+      toast({ title: 'Success', description: 'Loan added successfully' });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to add loan: ${error.message}`,
-        variant: "destructive",
-      });
-    },
+    onError: (e: Error) => toast({ title: 'Error', description: `Failed to add loan: ${e.message}`, variant: 'destructive' }),
   });
 
-  // Update loan mutation
   const updateLoan = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Loan> & { id: string }) => {
-      if (!user) throw new Error('User not authenticated');
-
-      // Recalculate EMI if relevant fields changed
+    mutationFn: ({ id, ...updates }: Partial<Loan> & { id: string }) => {
       if (updates.principal_amount || updates.interest_rate || updates.tenure_months) {
         const loan = loans.find(l => l.id === id);
         if (loan) {
@@ -115,70 +62,23 @@ export const useLoans = () => {
           );
         }
       }
-
-      const { data, error } = await supabase
-        .from('loans')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return svcUpdate(user!.id, id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loans'] });
-      toast({
-        title: "Success",
-        description: "Loan updated successfully",
-      });
+      toast({ title: 'Success', description: 'Loan updated successfully' });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update loan: ${error.message}`,
-        variant: "destructive",
-      });
-    },
+    onError: (e: Error) => toast({ title: 'Error', description: `Failed to update loan: ${e.message}`, variant: 'destructive' }),
   });
 
-  // Delete loan mutation
   const deleteLoan = useMutation({
-    mutationFn: async (id: string) => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { error } = await supabase
-        .from('loans')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => svcDelete(user!.id, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loans'] });
-      toast({
-        title: "Success",
-        description: "Loan deleted successfully",
-      });
+      toast({ title: 'Success', description: 'Loan deleted successfully' });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete loan: ${error.message}`,
-        variant: "destructive",
-      });
-    },
+    onError: (e: Error) => toast({ title: 'Error', description: `Failed to delete loan: ${e.message}`, variant: 'destructive' }),
   });
 
-  return {
-    loans,
-    isLoading,
-    error,
-    createLoan,
-    updateLoan,
-    deleteLoan,
-    calculateEMI,
-  };
+  return { loans, isLoading, error, createLoan, updateLoan, deleteLoan, calculateEMI };
 };

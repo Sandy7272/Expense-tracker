@@ -40,14 +40,17 @@ export function AIAssistantChat() {
     setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantId }]);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated. Please log in.");
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const resp = await fetch(`${supabaseUrl}/functions/v1/ai-finance-assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${anonKey}`,
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           mode: "chat",

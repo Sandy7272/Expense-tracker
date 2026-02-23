@@ -8,6 +8,7 @@ import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { DateRangeProvider } from "./contexts/DateRangeContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { lazy, Suspense } from "react";
+import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 
 // Lazy load all route pages
 const Index = lazy(() => import("./pages/Index"));
@@ -69,24 +70,26 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
-                  <Route path="/lending" element={<ProtectedRoute><Lending /></ProtectedRoute>} />
-                  <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
-                  <Route path="/recurring" element={<ProtectedRoute><RecurringPayments /></ProtectedRoute>} />
-                  <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
-                  <Route path="/profit-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
-                  <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                    <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+                    <Route path="/lending" element={<ProtectedRoute><Lending /></ProtectedRoute>} />
+                    <Route path="/loans" element={<ProtectedRoute><Loans /></ProtectedRoute>} />
+                    <Route path="/recurring" element={<ProtectedRoute><RecurringPayments /></ProtectedRoute>} />
+                    <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+                    <Route path="/profit-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
+                    <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </BrowserRouter>
           </TooltipProvider>
         </SubscriptionProvider>

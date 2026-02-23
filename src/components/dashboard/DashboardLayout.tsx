@@ -20,18 +20,22 @@ interface DashboardLayoutProps {
   isLoading?: boolean;
 }
 
-const navigation = [
+const primaryNav = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Transactions", href: "/transactions", icon: CreditCard },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Budgets", href: "/budgets", icon: Target },
+];
+
+const secondaryNav = [
   { name: "Recurring", href: "/recurring", icon: CalendarClock },
   { name: "P&L", href: "/profit-loss", icon: TrendingUp },
   { name: "Investments", href: "/investments", icon: PiggyBank },
   { name: "Lending", href: "/lending", icon: Users },
   { name: "Loans", href: "/loans", icon: CreditCard },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
+
+const navigation = [...primaryNav, ...secondaryNav, { name: "Settings", href: "/settings", icon: Settings }];
 
 export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,7 +72,7 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         </div>
 
         <nav className="mt-4 px-3 space-y-1">
-          {navigation.map((item) => {
+          {primaryNav.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
             return (
@@ -84,6 +88,31 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 onClick={() => setSidebarOpen(false)}
               >
                 <Icon className={cn("mr-3 h-4 w-4", isActive && "text-primary")} />
+                {item.name}
+              </Link>
+            );
+          })}
+
+          <div className="pt-3 pb-1 px-3">
+            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">More</p>
+          </div>
+
+          {secondaryNav.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  "flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors",
+                  isActive
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                )}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Icon className={cn("mr-3 h-3.5 w-3.5", isActive && "text-primary")} />
                 {item.name}
               </Link>
             );

@@ -71,7 +71,7 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
           </Button>
         </div>
 
-        <nav className="mt-4 px-3 space-y-1">
+        <nav className="mt-4 px-3 space-y-1" aria-label="Primary navigation">
           {primaryNav.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
@@ -93,8 +93,8 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
             );
           })}
 
-          <div className="pt-3 pb-1 px-3">
-            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">More</p>
+          <div className="pt-4 pb-2 px-3" role="separator">
+            <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">More</p>
           </div>
 
           {secondaryNav.map((item) => {

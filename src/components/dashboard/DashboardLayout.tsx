@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { 
   Home, CreditCard, BarChart3, PiggyBank, Settings, Menu, X, RefreshCw, Users, LogOut,
-  CalendarClock, Target, TrendingUp, Crown
+  CalendarClock, Target, TrendingUp, Crown, Sun, Moon
 } from "lucide-react";
 import { DateRangeSelector } from "@/components/dashboard/DateRangeSelector";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useTheme } from "next-themes";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -42,9 +43,9 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { isPremium, trialDaysLeft } = useSubscription();
+  const { theme, setTheme } = useTheme();
 
   const showDateFilterAndRefresh = !['/loans', '/settings'].includes(location.pathname);
-
   const currentPage = navigation.find(n => n.href === location.pathname)?.name || "Dashboard";
 
   return (
@@ -52,26 +53,26 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border transform transition-transform duration-200 ease-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border flex flex-col transition-transform duration-200 ease-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between h-14 px-5 border-b border-border">
-          <h1 className="text-lg font-bold text-foreground">
-            💸 FinTrack
-          </h1>
-          <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
+        {/* Logo */}
+        <div className="flex items-center justify-between h-14 px-5 border-b border-border shrink-0">
+          <span className="text-base font-semibold text-foreground tracking-tight">FinTrack</span>
+          <Button variant="ghost" size="sm" className="lg:hidden h-8 w-8 p-0" onClick={() => setSidebarOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <nav className="mt-4 px-3 space-y-1" aria-label="Primary navigation">
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" aria-label="Primary navigation">
           {primaryNav.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
@@ -80,21 +81,21 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
                   isActive
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon className={cn("mr-3 h-4 w-4", isActive && "text-primary")} />
+                <Icon className="h-4 w-4 shrink-0" />
                 {item.name}
               </Link>
             );
           })}
 
-          <div className="pt-4 pb-2 px-3" role="separator">
-            <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">More</p>
+          <div className="pt-5 pb-1.5 px-3">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">More</p>
           </div>
 
           {secondaryNav.map((item) => {
@@ -105,58 +106,90 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
                   isActive
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
-                <Icon className={cn("mr-3 h-3.5 w-3.5", isActive && "text-primary")} />
+                <Icon className="h-4 w-4 shrink-0" />
                 {item.name}
               </Link>
             );
           })}
+
+          <Link
+            to="/settings"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors mt-2",
+              location.pathname === "/settings"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            Settings
+          </Link>
         </nav>
 
-        <div className="absolute bottom-4 left-3 right-3 space-y-2">
-          {/* Premium upsell / trial indicator */}
+        {/* Bottom section */}
+        <div className="p-3 space-y-2 border-t border-border shrink-0">
+          {/* Premium upsell */}
           {!isPremium && (
             <Link
               to="/subscription"
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
+              className="flex items-center gap-2.5 p-2.5 rounded-md bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
               <Crown className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-primary">Upgrade to Premium</p>
-                <p className="text-[10px] text-muted-foreground">₹299/month · 7-day free trial</p>
+                <p className="text-xs font-medium text-primary">Upgrade to Pro</p>
+                <p className="text-[10px] text-muted-foreground">7-day free trial</p>
               </div>
             </Link>
           )}
           {isPremium && trialDaysLeft !== null && (
             <Link
               to="/subscription"
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-warning/10 border border-warning/20 hover:bg-warning/15 transition-colors"
+              className="flex items-center gap-2 p-2.5 rounded-md bg-warning/5 border border-warning/10 hover:bg-warning/10 transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
               <Crown className="h-3.5 w-3.5 text-warning shrink-0" />
-              <p className="text-[10px] text-warning font-medium">{trialDaysLeft}d trial left · Subscribe</p>
+              <p className="text-[10px] text-warning font-medium">{trialDaysLeft}d trial left</p>
             </Link>
           )}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-primary">
+
+          {/* User + Theme */}
+          <div className="flex items-center gap-2 p-2 rounded-md bg-accent/50">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-primary">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-foreground truncate">{user?.email}</p>
               {isPremium && trialDaysLeft === null && (
-                <Badge className="text-[9px] h-3.5 px-1 bg-primary/15 text-primary border-0 mt-0.5">Premium</Badge>
+                <Badge className="text-[9px] h-3.5 px-1 bg-primary/10 text-primary border-0">Pro</Badge>
               )}
             </div>
-            <Button onClick={signOut} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            </Button>
+            <Button
+              onClick={signOut}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              aria-label="Sign out"
+            >
               <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -166,13 +199,13 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
       {/* Main content */}
       <div className="lg:pl-60">
         {/* Top header */}
-        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-border/50">
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center justify-between gap-4 px-4 sm:px-6 h-14">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" className="lg:hidden h-8 w-8 p-0" onClick={() => setSidebarOpen(true)}>
                 <Menu className="h-4 w-4" />
               </Button>
-              <h2 className="text-base font-semibold text-foreground">{currentPage}</h2>
+              <h2 className="text-sm font-semibold text-foreground">{currentPage}</h2>
             </div>
             
             <div className="flex items-center gap-2">
@@ -192,7 +225,6 @@ export function DashboardLayout({ children, onRefresh, isLoading }: DashboardLay
         </main>
       </div>
 
-      {/* Global: Mobile bottom nav, FAB, AI Chat */}
       <MobileBottomNav />
       <FloatingAddButton />
       <AIAssistantChat />

@@ -99,7 +99,9 @@ export function FloatingAddButton() {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 flex items-center justify-center border-2 border-primary/60"
+        aria-label={isOpen ? "Close quick add" : "Add expense"}
+        aria-expanded={isOpen}
+        className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40 flex items-center justify-center border-2 border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <AnimatePresence mode="wait">
           {isOpen ? (

@@ -18,49 +18,14 @@ import { Button } from "@/components/ui/button";
 import {
   TrendingUp, TrendingDown, Wallet, ArrowUpCircle, ArrowDownCircle,
   Zap, ChevronDown, ChevronUp, LayoutGrid, Layers, Sparkles,
-  AlertCircle, PiggyBank, BarChart2
+  AlertCircle, PiggyBank, BarChart2, PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatCard } from "@/components/shared/StatCard";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 
-function StatCard({
-  label, value, icon: Icon, color, sub, trend
-}: {
-  label: string; value: string; icon: any;
-  color: "income" | "expense" | "primary" | "warning";
-  sub?: string; trend?: number;
-}) {
-  const colorMap = {
-    income: "text-income bg-income/10 border-income/20",
-    expense: "text-expense bg-expense/10 border-expense/20",
-    primary: "text-primary bg-primary/10 border-primary/20",
-    warning: "text-warning bg-warning/10 border-warning/20",
-  };
-  const textMap = {
-    income: "text-income", expense: "text-expense",
-    primary: "text-primary", warning: "text-warning",
-  };
-  return (
-    <Card className="kpi-card p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-2">
-        <div className={cn("p-2 rounded-xl border", colorMap[color])}>
-          <Icon className="h-4 w-4" />
-        </div>
-        {trend !== undefined && (
-          <span className={cn("text-xs font-medium flex items-center gap-0.5", trend >= 0 ? "text-income" : "text-expense")}>
-            {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {Math.abs(trend).toFixed(1)}%
-          </span>
-        )}
-      </div>
-      <div className="mt-3">
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-        <p className={cn("text-xl sm:text-2xl font-bold", textMap[color])}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </div>
-    </Card>
-  );
-}
+// InsightBadge kept inline as it's dashboard-specific
 
 function InsightBadge({ message, type }: { message: string; type: "positive" | "negative" | "neutral" }) {
   const styles = {
@@ -308,9 +273,12 @@ export default function Index() {
               <Card className="kpi-card p-4">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Spending Breakdown</h3>
                 {categoryData.length === 0 ? (
-                  <div className="flex items-center justify-center h-24 text-muted-foreground text-xs">
-                    Add expenses to see breakdown
-                  </div>
+                  <EmptyState
+                    icon={BarChart2}
+                    title="No expenses yet"
+                    description="Add your first expense to see your spending breakdown here."
+                    className="py-6"
+                  />
                 ) : (
                   <div className="space-y-2">
                     {categoryData.slice(0, 4).map(cat => {
@@ -384,7 +352,7 @@ export default function Index() {
                   <h3 className="text-sm font-semibold text-foreground">Spending Insights</h3>
                 </div>
                 {insights.length === 0 ? (
-                  <div className="flex items-center justify-center h-20 text-muted-foreground text-xs">Add transactions for insights</div>
+                  <EmptyState icon={Sparkles} title="No insights yet" description="Add transactions to get smart financial insights." className="py-6" />
                 ) : (
                   <div className="space-y-2">
                     {insights.map((ins, i) => <InsightBadge key={i} message={ins.message} type={ins.type} />)}

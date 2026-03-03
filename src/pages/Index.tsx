@@ -18,12 +18,28 @@ import { Button } from "@/components/ui/button";
 import {
   TrendingUp, TrendingDown, Wallet, ArrowUpCircle, ArrowDownCircle,
   Zap, ChevronDown, ChevronUp, LayoutGrid, Layers, Sparkles,
-  AlertCircle, PiggyBank, BarChart2, PlusCircle
+  AlertCircle, PiggyBank, BarChart2, PlusCircle, CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/shared/StatCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Profit Margin Badge
+function ProfitMarginBadge({ income, expenses }: { income: number; expenses: number }) {
+  if (income === 0) return null;
+  const margin = ((income - expenses) / income) * 100;
+  const config = margin > 30
+    ? { label: "Healthy", className: "bg-success/10 text-success border-success/20" }
+    : margin >= 15
+    ? { label: "Moderate", className: "bg-warning/10 text-warning border-warning/20" }
+    : { label: "Risk", className: "bg-destructive/10 text-destructive border-destructive/20" };
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border", config.className)}>
+      {margin.toFixed(0)}% · {config.label}
+    </span>
+  );
+}
 
 // InsightBadge kept inline as it's dashboard-specific
 
@@ -195,14 +211,14 @@ export default function Index() {
             transition={{ duration: 0.2 }}
             className="space-y-5"
           >
-            {/* 4 Core KPIs */}
+            {/* 5 Core KPIs + Profit Margin */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard
-                label="Balance"
-                value={formatAmount(financialData.totalBalance)}
+                label="Net Cash"
+                value={formatAmount(financialData.totalIncome - financialData.totalExpenses - financialData.emi)}
                 icon={Wallet}
                 color="primary"
-                sub="After all expenses"
+                sub="Income − Expense − EMI"
               />
               <StatCard
                 label="Income"
@@ -218,13 +234,20 @@ export default function Index() {
                 color="expense"
                 sub="This period"
               />
-              <StatCard
-                label="Savings Rate"
-                value={`${financialData.savingsRate.toFixed(0)}%`}
-                icon={PiggyBank}
-                color={financialData.savingsRate >= 20 ? "income" : "warning"}
-                sub={financialData.savingsRate >= 20 ? "On track 🎯" : "Needs attention"}
-              />
+              <div className="kpi-card p-4 rounded-xl border border-border bg-card flex flex-col justify-between">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Profit Margin</span>
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <span className="text-lg font-bold text-foreground">
+                    {financialData.totalIncome > 0 ? `${financialData.savingsRate.toFixed(0)}%` : "—"}
+                  </span>
+                  <ProfitMarginBadge income={financialData.totalIncome} expenses={financialData.totalExpenses} />
+                </div>
+              </div>
             </div>
 
             {/* AI Quick Add */}
@@ -318,12 +341,26 @@ export default function Index() {
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Full 4 KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatCard label="Net Balance" value={formatAmount(financialData.totalBalance)} icon={Wallet} color="primary" />
+            {/* Full 5 KPIs */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <StatCard label="Net Cash" value={formatAmount(financialData.totalIncome - financialData.totalExpenses - financialData.emi)} icon={Wallet} color="primary" sub="Income − Exp − EMI" />
               <StatCard label="Income" value={formatAmount(financialData.totalIncome)} icon={ArrowUpCircle} color="income" />
               <StatCard label="Expenses" value={formatAmount(financialData.totalExpenses)} icon={ArrowDownCircle} color="expense" />
-              <StatCard label="Savings Rate" value={`${financialData.savingsRate.toFixed(0)}%`} icon={PiggyBank} color={financialData.savingsRate >= 20 ? "income" : "warning"} />
+              <StatCard label="EMI Load" value={formatAmount(financialData.emi)} icon={CreditCard} color="warning" />
+              <div className="kpi-card p-4 rounded-xl border border-border bg-card flex flex-col justify-between">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Profit Margin</span>
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <span className="text-xl font-bold text-foreground">
+                    {financialData.totalIncome > 0 ? `${financialData.savingsRate.toFixed(0)}%` : "—"}
+                  </span>
+                  <ProfitMarginBadge income={financialData.totalIncome} expenses={financialData.totalExpenses} />
+                </div>
+              </div>
             </div>
 
             {/* AI Entry */}

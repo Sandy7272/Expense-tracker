@@ -213,6 +213,9 @@ export default function Index() {
             className="space-y-5"
           >
             {/* 5 Core KPIs + Profit Margin */}
+            {isAnyLoading ? (
+              <SummaryCardsSkeleton />
+            ) : (
             <div className="grid grid-cols-2 gap-3">
               <StatCard
                 label="Net Cash"
@@ -249,6 +252,8 @@ export default function Index() {
                   <ProfitMarginBadge income={financialData.totalIncome} expenses={financialData.totalExpenses} />
                 </div>
               </div>
+            </div>
+            )}
             </div>
 
             {/* AI Quick Add */}

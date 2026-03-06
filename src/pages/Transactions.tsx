@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/currency";
-import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database, Upload } from "lucide-react";
+import { Search, Filter, Download, Plus, Eye, Edit, Trash2, RefreshCw, Database, Upload, Tag } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import type { Transaction } from "@/hooks/useTransactions";
 import { AddExpenseModal } from "@/components/dashboard/AddExpenseModal";
@@ -28,8 +28,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const BULK_CATEGORIES = [
+  'Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Education',
+  'Bills', 'Investment', 'EMI', 'Rent', 'Salary', 'Transfer', 'Groceries',
+  'Subscriptions', 'Insurance', 'Recharge', 'Fuel', 'Other'
+];
+
 export default function Transactions() {
-  const { transactions, isLoading, deleteTransaction, createTransaction, bulkDeleteTransactions } = useTransactions();
+  const { transactions, isLoading, deleteTransaction, createTransaction, bulkDeleteTransactions, bulkUpdateCategory } = useTransactions();
   const { dateRange } = useGlobalDateRange();
   const { formatDateRange } = useDateRangeFilter();
   const { syncData, isSyncing } = useGoogleSheetsSync();
@@ -47,6 +53,7 @@ export default function Transactions() {
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const handleCsvImport = async (importedTransactions: any[]) => {
@@ -82,6 +89,14 @@ export default function Transactions() {
     await bulkDeleteTransactions.mutateAsync(transactionIds);
     setSelectedTransactions(new Set());
     setBulkDeleteOpen(false);
+    setDeleteConfirmation("");
+  };
+
+  const handleBulkCategoryChange = async (category: string) => {
+    const ids = Array.from(selectedTransactions);
+    await bulkUpdateCategory.mutateAsync({ ids, category });
+    setSelectedTransactions(new Set());
+    setBulkCategoryOpen(false);
   };
 
   const PAGE_SIZE = 50;
@@ -294,14 +309,24 @@ export default function Transactions() {
                 </CardDescription>
               </div>
               {selectedTransactions.size > 0 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setBulkDeleteOpen(true)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Selected ({selectedTransactions.size})
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBulkCategoryOpen(true)}
+                  >
+                    <Tag className="w-4 h-4 mr-2" />
+                    Change Category ({selectedTransactions.size})
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setBulkDeleteOpen(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete ({selectedTransactions.size})
+                  </Button>
+                </div>
               )}
             </div>
           </CardHeader>
@@ -520,6 +545,30 @@ export default function Transactions() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Bulk Category Change Dialog */}
+        <Dialog open={bulkCategoryOpen} onOpenChange={setBulkCategoryOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Category for {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              {BULK_CATEGORIES.map(cat => (
+                <Button
+                  key={cat}
+                  variant="outline"
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => handleBulkCategoryChange(cat)}
+                  disabled={bulkUpdateCategory.isPending}
+                >
+                  <Tag className="w-3 h-3 mr-2" />
+                  {cat}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

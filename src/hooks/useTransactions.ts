@@ -11,6 +11,7 @@ import {
   updateTransaction as svcUpdate,
   deleteTransaction as svcDelete,
   bulkDeleteTransactions as svcBulkDelete,
+  bulkUpdateCategory as svcBulkUpdateCategory,
   subscribeToTransactions,
 } from '@/services/supabaseService';
 import type { Transaction, CreateTransactionInput, UpdateTransactionInput } from '@/services/supabaseService';
@@ -95,6 +96,18 @@ export function useTransactions() {
     onError: (e: Error) => toast({ title: 'Error', description: `Failed to delete transactions: ${e.message}`, variant: 'destructive' }),
   });
 
+  const bulkUpdateCategory = useMutation({
+    mutationFn: ({ ids, category }: { ids: string[]; category: string }) => svcBulkUpdateCategory(user!.id, ids, category),
+    onSuccess: (_, { ids, category }) => {
+      queryClient.setQueryData<Transaction[]>(['transactions', user?.id], (old) =>
+        old ? old.map(tx => ids.includes(tx.id) ? { ...tx, category } : tx) : []
+      );
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast({ title: 'Category updated', description: `${ids.length} transaction${ids.length !== 1 ? 's' : ''} updated.` });
+    },
+    onError: (e: Error) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
   // Realtime subscription via service layer
   useEffect(() => {
     if (!user) return;
@@ -103,5 +116,5 @@ export function useTransactions() {
     });
   }, [user, queryClient]);
 
-  return { transactions, isLoading, error, createTransaction, updateTransaction, deleteTransaction, bulkDeleteTransactions };
+  return { transactions, isLoading, error, createTransaction, updateTransaction, deleteTransaction, bulkDeleteTransactions, bulkUpdateCategory };
 }

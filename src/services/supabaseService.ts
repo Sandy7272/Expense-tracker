@@ -273,6 +273,13 @@ export async function bulkDeleteTransactions(userId: string, ids: string[]): Pro
   } catch (e) { rethrowOrHandle(e, 'bulk delete transactions'); }
 }
 
+export async function bulkUpdateCategory(userId: string, ids: string[], category: string): Promise<void> {
+  try {
+    const { error } = await supabase.from('transactions').update({ category }).in('id', ids).eq('user_id', userId);
+    if (error) handleSupabaseError(error, 'bulk update category');
+  } catch (e) { rethrowOrHandle(e, 'bulk update category'); }
+}
+
 export async function createBulkTransactions(userId: string, txs: CreateTransactionInput[]): Promise<Transaction[]> {
   try {
     const rows = txs.map(t => ({ ...t, user_id: userId, status: t.status || 'completed' }));

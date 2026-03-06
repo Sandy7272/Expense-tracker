@@ -347,26 +347,30 @@ export default function Index() {
             className="space-y-6"
           >
             {/* Full 5 KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              <StatCard label="Net Cash" value={formatAmount(financialData.totalIncome - financialData.totalExpenses - financialData.emi)} icon={Wallet} color="primary" sub="Income − Exp − EMI" />
-              <StatCard label="Income" value={formatAmount(financialData.totalIncome)} icon={ArrowUpCircle} color="income" />
-              <StatCard label="Expenses" value={formatAmount(financialData.totalExpenses)} icon={ArrowDownCircle} color="expense" />
-              <StatCard label="EMI Load" value={formatAmount(financialData.emi)} icon={CreditCard} color="warning" />
-              <div className="kpi-card p-4 rounded-xl border border-border bg-card flex flex-col justify-between">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="p-1.5 rounded-lg bg-primary/10">
-                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            {isAnyLoading ? (
+              <SummaryCardsSkeleton />
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <StatCard label="Net Cash" value={formatAmount(financialData.totalIncome - financialData.totalExpenses - financialData.emi)} icon={Wallet} color="primary" sub="Income − Exp − EMI" />
+                <StatCard label="Income" value={formatAmount(financialData.totalIncome)} icon={ArrowUpCircle} color="income" />
+                <StatCard label="Expenses" value={formatAmount(financialData.totalExpenses)} icon={ArrowDownCircle} color="expense" />
+                <StatCard label="EMI Load" value={formatAmount(financialData.emi)} icon={CreditCard} color="warning" />
+                <div className="kpi-card p-4 rounded-xl border border-border bg-card flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Profit Margin</span>
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Profit Margin</span>
-                </div>
-                <div className="flex items-end justify-between gap-2">
-                  <span className="text-xl font-bold text-foreground">
-                    {financialData.totalIncome > 0 ? `${financialData.savingsRate.toFixed(0)}%` : "—"}
-                  </span>
-                  <ProfitMarginBadge income={financialData.totalIncome} expenses={financialData.totalExpenses} />
+                  <div className="flex items-end justify-between gap-2">
+                    <span className="text-xl font-bold text-foreground">
+                      {financialData.totalIncome > 0 ? `${financialData.savingsRate.toFixed(0)}%` : "—"}
+                    </span>
+                    <ProfitMarginBadge income={financialData.totalIncome} expenses={financialData.totalExpenses} />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* AI Entry */}
             <Card className="kpi-card p-4">

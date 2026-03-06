@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { parseCSV, parseExcel, parsePDF, ParsedTransaction } from '@/lib/statementParser';
 import { supabase } from '@/integrations/supabase/client';
 import { TransactionPreview } from './TransactionPreview';
+import { Progress } from '@/components/ui/progress';
 
-type UploadStatus = 'idle' | 'uploading' | 'parsing' | 'categorizing' | 'preview' | 'success' | 'error';
+type UploadStatus = 'idle' | 'reading' | 'ai-processing' | 'preview' | 'success' | 'error';
 
-interface CategorizedTransaction extends ParsedTransaction {
+interface AITransaction {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
   category: string;
   confidence: number;
 }
@@ -17,8 +21,9 @@ interface CategorizedTransaction extends ParsedTransaction {
 export function BankStatementUpload() {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [file, setFile] = useState<File | null>(null);
-  const [transactions, setTransactions] = useState<CategorizedTransaction[]>([]);
+  const [transactions, setTransactions] = useState<AITransaction[]>([]);
   const [error, setError] = useState<string>('');
+  const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,10 +37,23 @@ export function BankStatementUpload() {
       'application/pdf'
     ];
 
-    if (!allowedTypes.includes(selectedFile.type)) {
+    // Also allow by extension for cases where MIME type detection fails
+    const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+    const allowedExts = ['csv', 'xlsx', 'xls', 'pdf'];
+
+    if (!allowedTypes.includes(selectedFile.type) && !allowedExts.includes(ext || '')) {
       toast({
         title: 'Invalid File Type',
         description: 'Please upload a CSV, Excel, or PDF file.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Maximum file size is 10MB.',
         variant: 'destructive'
       });
       return;
@@ -45,105 +63,101 @@ export function BankStatementUpload() {
     setError('');
   };
 
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const readExcelAsText = async (file: File): Promise<string> => {
+    const XLSX = await import('xlsx');
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    // Convert to CSV text for AI to parse
+    return XLSX.utils.sheet_to_csv(firstSheet);
+  };
+
   const handleUpload = async () => {
     if (!file) return;
 
     try {
-      setStatus('parsing');
       setError('');
-
-      // Parse the file
-      let parsedTransactions: ParsedTransaction[] = [];
+      setProgress(10);
       
-      if (file.type === 'application/pdf') {
-        // PDF files are parsed server-side
-        setStatus('categorizing');
-        
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        
-        const base64File = await base64Promise;
-        
-        const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
-          body: { 
-            mode: 'parse-pdf',
-            pdfFile: base64File 
-          }
-        });
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const isPDF = file.type === 'application/pdf' || ext === 'pdf';
+      const isExcel = file.type.includes('spreadsheet') || file.type.includes('excel') || ext === 'xlsx' || ext === 'xls';
 
-        if (functionError) throw functionError;
-        if (data.error) throw new Error(data.error);
-        
-        parsedTransactions = data.transactions || [];
+      // Step 1: Read file
+      setStatus('reading');
+      setProgress(20);
+
+      let requestBody: any;
+
+      if (isPDF) {
+        const base64File = await readFileAsBase64(file);
+        requestBody = { mode: 'parse-pdf', pdfFile: base64File };
       } else {
-        // CSV and Excel are parsed client-side
-        try {
-          if (file.type === 'text/csv') {
-            parsedTransactions = await parseCSV(file);
-          } else if (file.type.includes('spreadsheet') || file.type.includes('excel')) {
-            parsedTransactions = await parseExcel(file);
-          }
-        } catch (parseError) {
-          console.error('Parsing error:', parseError);
-          throw new Error(
-            parseError instanceof Error 
-              ? parseError.message 
-              : 'Failed to parse file. Please ensure it is a valid bank statement.'
-          );
+        // CSV or Excel → read as text and send to AI
+        let rawText: string;
+        if (isExcel) {
+          rawText = await readExcelAsText(file);
+        } else {
+          rawText = await readFileAsText(file);
         }
+        requestBody = { mode: 'parse-csv-ai', rawText };
       }
 
-      if (parsedTransactions.length === 0) {
-        throw new Error('No transactions found in the file. Please check the format or try CSV/Excel for best results.');
-      }
+      // Step 2: Send to AI for smart parsing + categorization
+      setStatus('ai-processing');
+      setProgress(40);
 
-      toast({
-        title: 'File Parsed',
-        description: `Found ${parsedTransactions.length} transactions. Categorizing with AI...`
+      const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
+        body: requestBody
       });
 
-      // Categorize with AI (skip if already done during PDF parsing)
-      if (file.type !== 'application/pdf') {
-        setStatus('categorizing');
-        
-        const { data, error: functionError } = await supabase.functions.invoke('categorize-transactions', {
-          body: { transactions: parsedTransactions }
-        });
+      setProgress(80);
 
-        if (functionError) throw functionError;
-        if (data.error) throw new Error(data.error);
+      if (functionError) throw new Error(functionError.message || 'AI processing failed');
+      if (data?.error) throw new Error(data.error);
 
-        // Combine parsed transactions with AI categorizations
-        const categorized: CategorizedTransaction[] = parsedTransactions.map((t, i) => ({
-          ...t,
-          category: data.categorizations[i]?.category || 'Other',
-          confidence: data.categorizations[i]?.confidence || 0.5
-        }));
+      const aiTransactions = data?.transactions || [];
 
-        setTransactions(categorized);
-      } else {
-        // PDF already returned categorized transactions
-        setTransactions(parsedTransactions as CategorizedTransaction[]);
+      if (aiTransactions.length === 0) {
+        throw new Error('No transactions found. Please check the file format and try again.');
       }
 
+      setTransactions(aiTransactions);
       setStatus('preview');
+      setProgress(100);
 
       toast({
-        title: 'Categorization Complete',
-        description: 'Review and approve the transactions below.'
+        title: `✨ AI Found ${aiTransactions.length} Transactions`,
+        description: 'Review the smart categorization and import when ready.'
       });
 
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to process file');
+      const message = err instanceof Error ? err.message : 'Failed to process file';
+      setError(message);
       setStatus('error');
+      setProgress(0);
       toast({
-        title: 'Upload Failed',
-        description: err instanceof Error ? err.message : 'Failed to process file',
+        title: 'Processing Failed',
+        description: message,
         variant: 'destructive'
       });
     }
@@ -152,15 +166,15 @@ export function BankStatementUpload() {
   const handleApprove = () => {
     setStatus('success');
     toast({
-      title: 'Success',
+      title: '✅ Import Complete',
       description: `${transactions.length} transactions imported successfully!`
     });
     
-    // Reset after showing preview
     setTimeout(() => {
       setStatus('idle');
       setFile(null);
       setTransactions([]);
+      setProgress(0);
     }, 2000);
   };
 
@@ -169,23 +183,7 @@ export function BankStatementUpload() {
     setFile(null);
     setTransactions([]);
     setError('');
-  };
-
-  const getStatusDisplay = () => {
-    switch (status) {
-      case 'uploading':
-        return { icon: Loader2, text: 'Uploading file...', color: 'text-primary' };
-      case 'parsing':
-        return { icon: Loader2, text: 'Extracting transactions...', color: 'text-primary' };
-      case 'categorizing':
-        return { icon: Loader2, text: 'AI categorizing transactions...', color: 'text-primary' };
-      case 'success':
-        return { icon: CheckCircle2, text: 'Import successful!', color: 'text-success' };
-      case 'error':
-        return { icon: AlertCircle, text: error, color: 'text-destructive' };
-      default:
-        return null;
-    }
+    setProgress(0);
   };
 
   if (status === 'preview') {
@@ -199,7 +197,7 @@ export function BankStatementUpload() {
     );
   }
 
-  const statusDisplay = getStatusDisplay();
+  const isProcessing = status === 'reading' || status === 'ai-processing';
 
   return (
     <Card className="glass-card p-6">
@@ -209,20 +207,46 @@ export function BankStatementUpload() {
             <Upload className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold">Upload Bank Statement</h3>
+            <h3 className="font-semibold">Smart Import with AI</h3>
             <p className="text-sm text-muted-foreground">
-              Import transactions from CSV, Excel, or PDF files
+              AI auto-detects categories — Zomato → Food, Salary → Income, SIP → Investment
             </p>
           </div>
         </div>
 
-        {statusDisplay && (
-          <div className={`flex items-center gap-2 p-3 rounded-lg bg-card ${statusDisplay.color}`}>
-            <statusDisplay.icon className={`h-5 w-5 ${status === 'uploading' || status === 'parsing' || status === 'categorizing' ? 'animate-spin' : ''}`} />
-            <span className="text-sm font-medium">{statusDisplay.text}</span>
+        {/* AI Processing Status */}
+        {isProcessing && (
+          <div className="space-y-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-5 w-5 animate-pulse" />
+              <span className="text-sm font-medium">
+                {status === 'reading' ? 'Reading file...' : 'AI is analyzing & categorizing transactions...'}
+              </span>
+            </div>
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {status === 'ai-processing' && 'Detecting merchants, categorizing expenses, identifying income sources...'}
+            </p>
           </div>
         )}
 
+        {/* Success State */}
+        {status === 'success' && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/50 text-accent-foreground">
+            <CheckCircle2 className="h-5 w-5" />
+            <span className="text-sm font-medium">Import successful!</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {status === 'error' && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm font-medium">{error}</span>
+          </div>
+        )}
+
+        {/* File Upload Area */}
         <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
           <input
             type="file"
@@ -230,7 +254,7 @@ export function BankStatementUpload() {
             className="hidden"
             accept=".csv,.xlsx,.xls,.pdf"
             onChange={handleFileSelect}
-            disabled={status !== 'idle' && status !== 'error'}
+            disabled={isProcessing}
           />
           <label htmlFor="statement-upload" className="cursor-pointer">
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -243,11 +267,11 @@ export function BankStatementUpload() {
           </label>
         </div>
 
-        {file && status === 'idle' && (
+        {file && (status === 'idle' || status === 'error') && (
           <div className="flex gap-2">
             <Button onClick={handleUpload} className="flex-1">
-              <Upload className="h-4 w-4 mr-2" />
-              Process File
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Smart Import
             </Button>
             <Button onClick={handleCancel} variant="outline">
               Cancel

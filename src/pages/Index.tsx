@@ -254,7 +254,6 @@ export default function Index() {
               </div>
             </div>
             )}
-            </div>
 
             {/* AI Quick Add */}
             <Card className="kpi-card p-4">

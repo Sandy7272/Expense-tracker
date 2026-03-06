@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/shared/StatCard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SummaryCardsSkeleton, ChartSkeleton } from "@/components/shared/SkeletonCards";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Profit Margin Badge

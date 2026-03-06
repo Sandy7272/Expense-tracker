@@ -309,14 +309,24 @@ export default function Transactions() {
                 </CardDescription>
               </div>
               {selectedTransactions.size > 0 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setBulkDeleteOpen(true)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Selected ({selectedTransactions.size})
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBulkCategoryOpen(true)}
+                  >
+                    <Tag className="w-4 h-4 mr-2" />
+                    Change Category ({selectedTransactions.size})
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setBulkDeleteOpen(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete ({selectedTransactions.size})
+                  </Button>
+                </div>
               )}
             </div>
           </CardHeader>

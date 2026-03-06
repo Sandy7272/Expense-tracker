@@ -11,6 +11,7 @@ import {
   updateTransaction as svcUpdate,
   deleteTransaction as svcDelete,
   bulkDeleteTransactions as svcBulkDelete,
+  bulkUpdateCategory as svcBulkUpdateCategory,
   subscribeToTransactions,
 } from '@/services/supabaseService';
 import type { Transaction, CreateTransactionInput, UpdateTransactionInput } from '@/services/supabaseService';

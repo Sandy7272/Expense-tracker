@@ -545,6 +545,30 @@ export default function Transactions() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Bulk Category Change Dialog */}
+        <Dialog open={bulkCategoryOpen} onOpenChange={setBulkCategoryOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Category for {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              {BULK_CATEGORIES.map(cat => (
+                <Button
+                  key={cat}
+                  variant="outline"
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => handleBulkCategoryChange(cat)}
+                  disabled={bulkUpdateCategory.isPending}
+                >
+                  <Tag className="w-3 h-3 mr-2" />
+                  {cat}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

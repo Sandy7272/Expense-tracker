@@ -27,8 +27,8 @@ function computeInitialState() {
     }
   }
 
-  // Default true for dev/demo
-  return { isPremium: true, isTrialActive: false, trialDaysLeft: null as number | null };
+  // Default false — require active subscription or trial
+  return { isPremium: false, isTrialActive: false, trialDaysLeft: null as number | null };
 }
 
 export const useSubscriptionStore = create<SubscriptionState>((set) => {

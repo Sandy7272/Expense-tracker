@@ -42,6 +42,7 @@
     "@supabase/supabase-js": "^2.53.0",
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-query": "^5.56.2",
+    "@tanstack/react-virtual": "^3.13.22",
     "@types/papaparse": "^5.3.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

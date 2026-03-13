@@ -254,9 +254,10 @@ export async function fetchTransactions(
 
 export async function createTransaction(userId: string, input: CreateTransactionInput): Promise<Transaction> {
   try {
+    const validated = validate(createTransactionSchema, input);
     const { data, error } = await supabase
       .from('transactions')
-      .insert({ ...input, user_id: userId, status: input.status || 'completed' })
+      .insert({ ...validated, user_id: userId, status: validated.status || 'completed' })
       .select().single();
     if (error) handleSupabaseError(error, 'create transaction');
     return data!;

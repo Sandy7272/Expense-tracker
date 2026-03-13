@@ -240,7 +240,7 @@ export async function fetchTransactions(
   opts?: { startDate?: string; endDate?: string; type?: TransactionTypeEnum; category?: string; limit?: number }
 ): Promise<Transaction[]> {
   try {
-    let q = supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
+    let q = supabase.from('transactions').select('*').eq('user_id', userId).is('deleted_at', null).order('date', { ascending: false });
     if (opts?.startDate) q = q.gte('date', opts.startDate);
     if (opts?.endDate) q = q.lte('date', opts.endDate);
     if (opts?.type) q = q.eq('type', opts.type);

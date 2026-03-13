@@ -453,6 +453,7 @@ export default function Transactions() {
                 <p className="text-sm text-muted-foreground pt-2">
                   Showing {filteredTransactions.length} transactions (virtualized)
                 </p>
+              </div>
             )}
           </CardContent>
         </Card>

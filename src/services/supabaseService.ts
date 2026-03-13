@@ -229,6 +229,7 @@ function handleSupabaseError(error: unknown, context: string): never {
 
 function rethrowOrHandle(error: unknown, context: string): never {
   if (error instanceof APIError) throw error;
+  if (error instanceof ValidationError) throw new APIError(error.message, error.code, error.statusCode);
   handleSupabaseError(error, context);
 }
 

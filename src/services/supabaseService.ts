@@ -379,8 +379,9 @@ export async function fetchLoanPayments(loanId: string): Promise<LoanPayment[]> 
 
 export async function createLoanPayment(input: CreateLoanPaymentInput): Promise<LoanPayment> {
   try {
+    const validated = validate(createLoanPaymentSchema, input);
     const { data, error } = await supabase
-      .from('loan_payments').insert(input).select().single();
+      .from('loan_payments').insert(validated as any).select().single();
     if (error) handleSupabaseError(error, 'create loan payment');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create loan payment'); }

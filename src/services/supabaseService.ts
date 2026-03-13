@@ -6,6 +6,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { APIError, AuthError } from './api';
+import {
+  validate,
+  createTransactionSchema,
+  updateTransactionSchema,
+  createLoanSchema,
+  createLoanPaymentSchema,
+  createLendingSchema,
+  createBudgetSchema,
+  createRecurringPaymentSchema,
+  updateSettingsSchema,
+  ValidationError,
+} from './validation';
 
 // ============= SHARED TYPES =============
 

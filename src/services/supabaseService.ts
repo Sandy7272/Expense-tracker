@@ -432,8 +432,9 @@ export async function fetchUniqueLendingPersons(userId: string): Promise<string[
 
 export async function createLendingTransaction(userId: string, input: CreateLendingInput): Promise<LendingTransaction> {
   try {
+    const validated = validate(createLendingSchema, input);
     const { data, error } = await supabase
-      .from('lending_transactions').insert({ ...input, user_id: userId }).select().single();
+      .from('lending_transactions').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create lending transaction');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create lending transaction'); }

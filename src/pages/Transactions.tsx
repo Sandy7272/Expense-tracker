@@ -100,39 +100,14 @@ export default function Transactions() {
     setBulkCategoryOpen(false);
   };
 
-  const PAGE_SIZE = 50;
-  const [currentPage, setCurrentPage] = useState(1);
+  const parentRef = useRef<HTMLDivElement>(null);
 
-  const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
-    const desc = (transaction.description || "").toLowerCase();
-    const cat = (transaction.category || "").toLowerCase();
-    const type = (transaction.type || "").toLowerCase();
-    const person = (transaction.person || "").toLowerCase();
-    
-    const matchesSearch =
-      desc.includes(searchTerm.toLowerCase()) ||
-      cat.includes(searchTerm.toLowerCase()) ||
-      person.includes(searchTerm.toLowerCase());
-    
-    const matchesCategory =
-      categoryFilter === "all" || transaction.category === categoryFilter;
-    
-    const matchesType = typeFilter === "all" || type === typeFilter;
-    
-    const matchesPerson = personFilter === "all" || person.includes(personFilter.toLowerCase());
-    
-    const amount = Math.abs(Number(transaction.amount));
-    const matchesMinAmount = !minAmount || amount >= Number(minAmount);
-    const matchesMaxAmount = !maxAmount || amount <= Number(maxAmount);
-    
-    return matchesSearch && matchesCategory && matchesType && matchesPerson && matchesMinAmount && matchesMaxAmount;
-  }), [transactions, searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
-  const paginatedTransactions = useMemo(() => 
-    filteredTransactions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filteredTransactions, currentPage]
-  );
+  const virtualizer = useVirtualizer({
+    count: filteredTransactions.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80,
+    overscan: 10,
+  });
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);

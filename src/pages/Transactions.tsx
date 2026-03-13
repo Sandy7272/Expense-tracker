@@ -100,6 +100,31 @@ export default function Transactions() {
     setBulkCategoryOpen(false);
   };
 
+  const filteredTransactions = useMemo(() => transactions.filter((transaction) => {
+    const desc = (transaction.description || "").toLowerCase();
+    const cat = (transaction.category || "").toLowerCase();
+    const type = (transaction.type || "").toLowerCase();
+    const person = (transaction.person || "").toLowerCase();
+    
+    const matchesSearch =
+      desc.includes(searchTerm.toLowerCase()) ||
+      cat.includes(searchTerm.toLowerCase()) ||
+      person.includes(searchTerm.toLowerCase());
+    
+    const matchesCategory =
+      categoryFilter === "all" || transaction.category === categoryFilter;
+    
+    const matchesType = typeFilter === "all" || type === typeFilter;
+    
+    const matchesPerson = personFilter === "all" || person.includes(personFilter.toLowerCase());
+    
+    const amount = Math.abs(Number(transaction.amount));
+    const matchesMinAmount = !minAmount || amount >= Number(minAmount);
+    const matchesMaxAmount = !maxAmount || amount <= Number(maxAmount);
+    
+    return matchesSearch && matchesCategory && matchesType && matchesPerson && matchesMinAmount && matchesMaxAmount;
+  }), [transactions, searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
@@ -108,9 +133,6 @@ export default function Transactions() {
     estimateSize: () => 80,
     overscan: 10,
   });
-
-  // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, categoryFilter, typeFilter, personFilter, minAmount, maxAmount]);
 
   const categories = [...new Set(transactions.map(t => t.category))];
   const people = [...new Set(transactions.map(t => t.person).filter(Boolean))];

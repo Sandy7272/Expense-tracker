@@ -299,8 +299,11 @@ export async function bulkUpdateCategory(userId: string, ids: string[], category
 
 export async function createBulkTransactions(userId: string, txs: CreateTransactionInput[]): Promise<Transaction[]> {
   try {
-    const rows = txs.map(t => ({ ...t, user_id: userId, status: t.status || 'completed' }));
-    const { data, error } = await supabase.from('transactions').insert(rows).select();
+    const rows = txs.map(t => {
+      const validated = validate(createTransactionSchema, t);
+      return { ...validated, user_id: userId, status: validated.status || 'completed' as const };
+    });
+    const { data, error } = await supabase.from('transactions').insert(rows as any).select();
     if (error) handleSupabaseError(error, 'create bulk transactions');
     return (data ?? []) as Transaction[];
   } catch (e) { rethrowOrHandle(e, 'create bulk transactions'); }

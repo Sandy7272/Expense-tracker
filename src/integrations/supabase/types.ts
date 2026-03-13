@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           category: string
@@ -382,6 +415,7 @@ export type Database = {
           category: string
           created_at: string
           date: string
+          deleted_at: string | null
           description: string | null
           id: string
           loan_id: string | null
@@ -397,6 +431,7 @@ export type Database = {
           category: string
           created_at?: string
           date?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           loan_id?: string | null
@@ -412,6 +447,7 @@ export type Database = {
           category?: string
           created_at?: string
           date?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           loan_id?: string | null

@@ -6,6 +6,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { APIError, AuthError } from './api';
+import {
+  validate,
+  createTransactionSchema,
+  updateTransactionSchema,
+  createLoanSchema,
+  createLoanPaymentSchema,
+  createLendingSchema,
+  createBudgetSchema,
+  createRecurringPaymentSchema,
+  updateSettingsSchema,
+  ValidationError,
+} from './validation';
 
 // ============= SHARED TYPES =============
 
@@ -217,6 +229,7 @@ function handleSupabaseError(error: unknown, context: string): never {
 
 function rethrowOrHandle(error: unknown, context: string): never {
   if (error instanceof APIError) throw error;
+  if (error instanceof ValidationError) throw new APIError(error.message, error.code, error.statusCode);
   handleSupabaseError(error, context);
 }
 
@@ -227,7 +240,7 @@ export async function fetchTransactions(
   opts?: { startDate?: string; endDate?: string; type?: TransactionTypeEnum; category?: string; limit?: number }
 ): Promise<Transaction[]> {
   try {
-    let q = supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
+    let q = supabase.from('transactions').select('*').eq('user_id', userId).is('deleted_at', null).order('date', { ascending: false });
     if (opts?.startDate) q = q.gte('date', opts.startDate);
     if (opts?.endDate) q = q.lte('date', opts.endDate);
     if (opts?.type) q = q.eq('type', opts.type);
@@ -241,9 +254,11 @@ export async function fetchTransactions(
 
 export async function createTransaction(userId: string, input: CreateTransactionInput): Promise<Transaction> {
   try {
+    const validated = validate(createTransactionSchema, input);
+    const row = { ...validated, user_id: userId, status: validated.status || 'completed' as const };
     const { data, error } = await supabase
       .from('transactions')
-      .insert({ ...input, user_id: userId, status: input.status || 'completed' })
+      .insert(row as any)
       .select().single();
     if (error) handleSupabaseError(error, 'create transaction');
     return data!;
@@ -252,8 +267,9 @@ export async function createTransaction(userId: string, input: CreateTransaction
 
 export async function updateTransaction(userId: string, id: string, input: UpdateTransactionInput): Promise<Transaction> {
   try {
+    const validated = validate(updateTransactionSchema, input);
     const { data, error } = await supabase
-      .from('transactions').update(input).eq('id', id).eq('user_id', userId).select().single();
+      .from('transactions').update(validated).eq('id', id).eq('user_id', userId).select().single();
     if (error) handleSupabaseError(error, 'update transaction');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'update transaction'); }
@@ -261,14 +277,16 @@ export async function updateTransaction(userId: string, id: string, input: Updat
 
 export async function deleteTransaction(userId: string, id: string): Promise<void> {
   try {
-    const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
+    // Soft delete: set deleted_at instead of removing the row
+    const { error } = await supabase.from('transactions').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId);
     if (error) handleSupabaseError(error, 'delete transaction');
   } catch (e) { rethrowOrHandle(e, 'delete transaction'); }
 }
 
 export async function bulkDeleteTransactions(userId: string, ids: string[]): Promise<void> {
   try {
-    const { error } = await supabase.from('transactions').delete().in('id', ids).eq('user_id', userId);
+    // Soft delete: set deleted_at instead of removing rows
+    const { error } = await supabase.from('transactions').update({ deleted_at: new Date().toISOString() }).in('id', ids).eq('user_id', userId);
     if (error) handleSupabaseError(error, 'bulk delete transactions');
   } catch (e) { rethrowOrHandle(e, 'bulk delete transactions'); }
 }
@@ -282,8 +300,11 @@ export async function bulkUpdateCategory(userId: string, ids: string[], category
 
 export async function createBulkTransactions(userId: string, txs: CreateTransactionInput[]): Promise<Transaction[]> {
   try {
-    const rows = txs.map(t => ({ ...t, user_id: userId, status: t.status || 'completed' }));
-    const { data, error } = await supabase.from('transactions').insert(rows).select();
+    const rows = txs.map(t => {
+      const validated = validate(createTransactionSchema, t);
+      return { ...validated, user_id: userId, status: validated.status || 'completed' as const };
+    });
+    const { data, error } = await supabase.from('transactions').insert(rows as any).select();
     if (error) handleSupabaseError(error, 'create bulk transactions');
     return (data ?? []) as Transaction[];
   } catch (e) { rethrowOrHandle(e, 'create bulk transactions'); }
@@ -321,8 +342,9 @@ export async function fetchLoans(userId: string): Promise<Loan[]> {
 
 export async function createLoan(userId: string, input: CreateLoanInput): Promise<Loan> {
   try {
+    const validated = validate(createLoanSchema, input);
     const { data, error } = await supabase
-      .from('loans').insert({ ...input, user_id: userId, status: input.status || 'active' }).select().single();
+      .from('loans').insert({ ...validated, user_id: userId, status: validated.status || 'active' } as any).select().single();
     if (error) handleSupabaseError(error, 'create loan');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create loan'); }
@@ -357,8 +379,9 @@ export async function fetchLoanPayments(loanId: string): Promise<LoanPayment[]> 
 
 export async function createLoanPayment(input: CreateLoanPaymentInput): Promise<LoanPayment> {
   try {
+    const validated = validate(createLoanPaymentSchema, input);
     const { data, error } = await supabase
-      .from('loan_payments').insert(input).select().single();
+      .from('loan_payments').insert(validated as any).select().single();
     if (error) handleSupabaseError(error, 'create loan payment');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create loan payment'); }
@@ -409,8 +432,9 @@ export async function fetchUniqueLendingPersons(userId: string): Promise<string[
 
 export async function createLendingTransaction(userId: string, input: CreateLendingInput): Promise<LendingTransaction> {
   try {
+    const validated = validate(createLendingSchema, input);
     const { data, error } = await supabase
-      .from('lending_transactions').insert({ ...input, user_id: userId }).select().single();
+      .from('lending_transactions').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create lending transaction');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create lending transaction'); }
@@ -445,8 +469,9 @@ export async function fetchBudgets(userId: string): Promise<Budget[]> {
 
 export async function createBudget(userId: string, input: CreateBudgetInput): Promise<Budget> {
   try {
+    const validated = validate(createBudgetSchema, input);
     const { data, error } = await supabase
-      .from('budgets').insert({ ...input, user_id: userId }).select().single();
+      .from('budgets').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create budget');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create budget'); }
@@ -480,8 +505,9 @@ export async function fetchRecurringPayments(userId: string): Promise<RecurringP
 
 export async function createRecurringPayment(userId: string, input: CreateRecurringPaymentInput): Promise<RecurringPayment> {
   try {
+    const validated = validate(createRecurringPaymentSchema, input);
     const { data, error } = await supabase
-      .from('recurring_payments').insert({ ...input, user_id: userId }).select().single();
+      .from('recurring_payments').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create recurring payment');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create recurring payment'); }
@@ -535,8 +561,9 @@ export async function createDefaultSettings(userId: string): Promise<UserSetting
 
 export async function updateUserSettings(userId: string, updates: UpdateSettingsInput): Promise<UserSettings> {
   try {
+    const validated = validate(updateSettingsSchema, updates);
     const { data, error } = await supabase
-      .from('user_settings').update(updates).eq('user_id', userId).select().single();
+      .from('user_settings').update(validated as any).eq('user_id', userId).select().single();
     if (error) handleSupabaseError(error, 'update user settings');
     return data! as UserSettings;
   } catch (e) { rethrowOrHandle(e, 'update user settings'); }

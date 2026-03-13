@@ -505,8 +505,9 @@ export async function fetchRecurringPayments(userId: string): Promise<RecurringP
 
 export async function createRecurringPayment(userId: string, input: CreateRecurringPaymentInput): Promise<RecurringPayment> {
   try {
+    const validated = validate(createRecurringPaymentSchema, input);
     const { data, error } = await supabase
-      .from('recurring_payments').insert({ ...input, user_id: userId }).select().single();
+      .from('recurring_payments').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create recurring payment');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create recurring payment'); }

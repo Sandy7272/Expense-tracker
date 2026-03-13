@@ -284,7 +284,8 @@ export async function deleteTransaction(userId: string, id: string): Promise<voi
 
 export async function bulkDeleteTransactions(userId: string, ids: string[]): Promise<void> {
   try {
-    const { error } = await supabase.from('transactions').delete().in('id', ids).eq('user_id', userId);
+    // Soft delete: set deleted_at instead of removing rows
+    const { error } = await supabase.from('transactions').update({ deleted_at: new Date().toISOString() }).in('id', ids).eq('user_id', userId);
     if (error) handleSupabaseError(error, 'bulk delete transactions');
   } catch (e) { rethrowOrHandle(e, 'bulk delete transactions'); }
 }

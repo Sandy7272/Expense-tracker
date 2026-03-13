@@ -266,8 +266,9 @@ export async function createTransaction(userId: string, input: CreateTransaction
 
 export async function updateTransaction(userId: string, id: string, input: UpdateTransactionInput): Promise<Transaction> {
   try {
+    const validated = validate(updateTransactionSchema, input);
     const { data, error } = await supabase
-      .from('transactions').update(input).eq('id', id).eq('user_id', userId).select().single();
+      .from('transactions').update(validated).eq('id', id).eq('user_id', userId).select().single();
     if (error) handleSupabaseError(error, 'update transaction');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'update transaction'); }

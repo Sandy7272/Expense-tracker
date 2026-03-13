@@ -471,7 +471,7 @@ export async function createBudget(userId: string, input: CreateBudgetInput): Pr
   try {
     const validated = validate(createBudgetSchema, input);
     const { data, error } = await supabase
-      .from('budgets').insert({ ...validated, user_id: userId }).select().single();
+      .from('budgets').insert({ ...validated, user_id: userId } as any).select().single();
     if (error) handleSupabaseError(error, 'create budget');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create budget'); }

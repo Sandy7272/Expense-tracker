@@ -469,8 +469,9 @@ export async function fetchBudgets(userId: string): Promise<Budget[]> {
 
 export async function createBudget(userId: string, input: CreateBudgetInput): Promise<Budget> {
   try {
+    const validated = validate(createBudgetSchema, input);
     const { data, error } = await supabase
-      .from('budgets').insert({ ...input, user_id: userId }).select().single();
+      .from('budgets').insert({ ...validated, user_id: userId }).select().single();
     if (error) handleSupabaseError(error, 'create budget');
     return data!;
   } catch (e) { rethrowOrHandle(e, 'create budget'); }

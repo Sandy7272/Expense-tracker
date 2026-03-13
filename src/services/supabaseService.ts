@@ -276,7 +276,8 @@ export async function updateTransaction(userId: string, id: string, input: Updat
 
 export async function deleteTransaction(userId: string, id: string): Promise<void> {
   try {
-    const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
+    // Soft delete: set deleted_at instead of removing the row
+    const { error } = await supabase.from('transactions').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId);
     if (error) handleSupabaseError(error, 'delete transaction');
   } catch (e) { rethrowOrHandle(e, 'delete transaction'); }
 }

@@ -561,8 +561,9 @@ export async function createDefaultSettings(userId: string): Promise<UserSetting
 
 export async function updateUserSettings(userId: string, updates: UpdateSettingsInput): Promise<UserSettings> {
   try {
+    const validated = validate(updateSettingsSchema, updates);
     const { data, error } = await supabase
-      .from('user_settings').update(updates).eq('user_id', userId).select().single();
+      .from('user_settings').update(validated as any).eq('user_id', userId).select().single();
     if (error) handleSupabaseError(error, 'update user settings');
     return data! as UserSettings;
   } catch (e) { rethrowOrHandle(e, 'update user settings'); }
